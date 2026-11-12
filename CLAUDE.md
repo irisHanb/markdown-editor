@@ -4,25 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 상태 — 구현 진행 중
 
-`src/`·`package.json` 생성됨. 에디터·프리뷰·툴바·로컬 저장 동작, Vitest 88/88 GREEN, 빌드 통과. SDD 산출물은 `specs/001-single-screen-editor`(에디터 단일화면)·`specs/002-full-markdown-toolbar`(툴바 완성)에 있다.
+M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰(100ms 디바운스, sanitize) + 툴바 12버튼 + `localStorage` 저장·취소·알림. Vitest 8 files·110 tests 통과, `tsc --noEmit` 오류 0건, 정적 export 빌드 통과. 브라우저 수동 검증(`specs/001-single-screen-editor/quickstart.md` 2절)과 Vercel 배포는 미실행. SDD 산출물은 `specs/001-single-screen-editor` 하나뿐이다.
 
-확정 스택(2026-06 결정): **Next.js 16 (App Router) + React 19 + TypeScript 5 + Tailwind CSS 4 + CodeMirror 6 + unified(remark/rehype) + IndexedDB(`idb`) + Zustand**. 근거·버전은 `docs/requirement.md §0–1`. (현재 저장은 `localStorage`, 폴더 도입 시 IndexedDB로 이관.)
+확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. `idb`·Zustand·`react-resizable-panels`는 아직 설치하지 않았다(M2·M3에서 추가).
 
 ### 마일스톤 — `docs/requirement.md §12`가 기준(canonical)
 
-7단계. 구현은 **가치우선**으로 진행돼 M4·M5(에디터·플러그인)를 M2·M3(레이아웃·저장소)보다 먼저 완성했다(순서 뒤섞임에 유의).
+7단계. M1은 Clarification(2026-11-12)에 따라 "스캐폴딩 + 디자인 시안 단일 화면"으로 해석했다.
 
 | 단계 | 범위 | 상태 |
 |------|------|------|
-| M1 | 프로젝트 스캐폴딩 (Next+TS+Tailwind) | ✅ 완료 |
-| M2 | **레이아웃 — 사이드바+컨텐츠 2분할, 리사이즈** | ⬜ 미착수 (← **다음 작업**) |
-| M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼 | ⬜ 미착수 |
-| M4 | 에디터/프리뷰 — CodeMirror 6 + unified 50:50, 실시간 렌더 | ✅ 완료(선구현) |
-| M5 | 플러그인 — `MarkdownPlugin` + 전체 태그(24종) | ✅ 완료(선구현) |
+| M1 | 스캐폴딩 + 단일 화면(에디터·프리뷰·툴바 12버튼·로컬 저장) | ✅ 구현 완료 (수동 검증·배포 잔여) |
+| M2 | **레이아웃(사이드바+컨텐츠 2분할, 리사이즈) + 툴바 완성(FR-5 전체: H1–H3·이미지·작업 목록·강제 줄바꿈·자동 링크·토글·대화상자·단축키)** | 🔶 M2-a·M2-b 구현 완료 (브라우저 수동 검증 잔여) |
+| M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼 | ⬜ 미착수 (← **다음 작업**) |
+| M4 | 에디터/프리뷰 — CodeMirror 6 + unified 50:50, 실시간 렌더 | 🔶 M1에서 단일 문서분 완료 |
+| M5 | (M2로 통합, 2026-11-12) | — |
 | M6 | 문서 흐름 — 폴더 선택 저장, 파일 리스트, 네비게이션 | ⬜ 미착수 |
-| M7 | 마감 — sanitize·접근성·토스트·dirty check | 🔶 대부분 완료(성능·E2E 수동검증 잔여) |
+| M7 | 마감 — sanitize·접근성·토스트·dirty check | 🔶 sanitize·알림 완료, dirty check 미착수 |
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1 + M4 + M7 일부 · `specs/002-full-markdown-toolbar` → M5. (spec 디렉터리명은 가치우선 시기 명명이라 requirement.md 번호와 1:1 아님.) 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md` — 둘 다 본 표 기준으로 정렬됨.
+**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
 
 
 ## 핵심 아키텍처 원칙 (반드시 준수)
@@ -66,19 +66,16 @@ export interface MarkdownPlugin {
 
 ## 명령어
 
-아직 `package.json` 없음. 스캐폴딩 후 표준 Next 명령 사용:
-
 ```bash
-# 최초 스캐폴딩
-npx create-next-app@latest . --ts --tailwind --app
-# 정확 버전 고정 — 구현 시점 재확인
-npm show <pkg> version
-
-npm run dev        # 개발 서버 (Turbopack)
-npm run build      # 프로덕션 빌드 (Vercel 배포 검증)
-npm test           # Vitest 전체
+npm run dev          # 개발 서버 (Turbopack)
+npm run build        # 정적 export → out/ (Vercel 배포 검증)
+npm test             # Vitest 전체 (vitest.config.mts, node 환경)
+npm run typecheck    # tsc --noEmit
 npx vitest run <path>   # 단일 테스트 파일
+python3 -m http.server 3000 -d out   # 빌드 결과를 서버 없이 확인
 ```
+
+TDD 진행 기록은 루트 `TDD-IMPLEMENTS.md`.
 
 ## 디자인 레퍼런스
 
@@ -106,8 +103,5 @@ UI·HTML·SVG·슬라이드 생성 시 **`.claude/rules/anti-ai-slop.md` 강제*
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/007-release-hardening/plan.md` (M7 마감 — 성능·접근성·안전종료·배포 검증, 진행 중).
-완료 SDD: 001(에디터)·002(툴바)·003(사이드바)·004(저장소)·005(에디터보강 M4)·006(문서흐름·라우팅 M6).
-M7 산출물: `research.md`(키보드리사이즈·대비·성능·클라네비 가드), `data-model.md`(신규모델 없음), `quickstart.md`(통합 수동·자동 검증), `contracts/`(accessibility·performance·save-feedback).
-M7 감사 발견 결함: `--danger` 토큰 미정의(FolderSelect 사용)·`--fg-faint` 대비 2.6:1(AA 미달)·토스트 성공/실패 미구분·대시보드 링크 dirty 가드 없음.
+`specs/003-full-toolbar/plan.md` (M2-b 툴바 18버튼·토글·대화상자·단축키). M2-a 레이아웃은 `specs/002-sidebar-layout`(구현 완료).
 <!-- SPECKIT END -->

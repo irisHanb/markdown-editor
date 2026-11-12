@@ -173,19 +173,19 @@ folders (1) ──< documents (N)
 
 ## 8. 구현 마일스톤
 
-기준은 **`requirement.md §12`(canonical, 7단계)**. 구현은 가치우선으로 M4·M5(에디터·플러그인)를 M2·M3(레이아웃·저장소)보다 먼저 완성했다 — 상태 열 참조.
+기준은 **`requirement.md §12`(canonical, 7단계)**. 2026-11-12 결정: FR-5 툴바 미구현분(H1–H3 개별, 이미지, 작업 목록, 강제 줄바꿈, 자동 링크, 토글, 링크·이미지 대화상자, 단축키)을 M5에서 M2로 옮겼다.
 
 | 단계 | 범위 | 핵심 산출물 | 상태 |
 |------|------|------------|------|
-| M1 | 프로젝트 스캐폴딩 | `create-next-app`(TS+Tailwind), 빌드/배포 골격 | ✅ |
-| M2 | 레이아웃 | 사이드바+컨텐츠 2분할, 리사이즈(`react-resizable-panels`) | ⬜ ← 다음 |
+| M1 | 스캐폴딩 + 단일 화면 | `create-next-app`(TS+Tailwind), 정적 export, 에디터·프리뷰·툴바 12버튼·`localStorage` 저장 | ✅ (수동 검증·배포 잔여) |
+| M2 | 레이아웃 + 툴바 완성 | 사이드바+컨텐츠 2분할, 리사이즈(`react-resizable-panels`) + FR-5 전체 버튼(H1–H3·이미지·작업 목록·강제 줄바꿈·자동 링크)·토글·대화상자·단축키 | ⬜ ← 다음 |
 | M3 | 저장소 | IndexedDB 스키마(`folders`/`documents`)·폴더 CRUD·`[+]` 버튼, localStorage 이관 | ⬜ |
-| M4 | 에디터/프리뷰 | CM6 + unified 50:50 + 실시간 렌더(디바운스) | ✅ 선구현 |
-| M5 | 플러그인 | `MarkdownPlugin` 인터페이스 + 전체 태그(24종) + 단축키·토글·활성표시 | ✅ 선구현 |
+| M4 | 에디터/프리뷰 | CM6 + unified 50:50 + 실시간 렌더(디바운스) | 🔶 M1에서 단일 문서분 완료 |
+| M5 | (M2로 통합) | — | — |
 | M6 | 문서 흐름 | 폴더 선택 저장, 파일 리스트, `/editor/[docId]` 네비게이션 | ⬜ |
-| M7 | 마감 | sanitize·접근성(aria)·토스트·dirty check·Vercel 검증 | 🔶 대부분 완료 |
+| M7 | 마감 | sanitize·접근성(aria)·토스트·dirty check·Vercel 검증 | 🔶 sanitize·알림 완료 |
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1+M4+M7 일부 · `specs/002-full-markdown-toolbar` → M5.
+**SDD 매핑**: `specs/001-single-screen-editor` → M1(+M4·M7 일부). M2 → `specs/002-sidebar-layout`(레이아웃)·`specs/003-full-toolbar`(툴바).
 원본 마일스톤 표는 `requirement.md §12`. M2(레이아웃)·M3(저장소) 설계 상세는 §2·§5 참조.
 
 ## 9. 보안·접근성 체크리스트

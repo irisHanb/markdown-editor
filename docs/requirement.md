@@ -102,7 +102,7 @@ Next.js App (Client)
 ┌──────────────────────────────────────────────────────────────────┐
 │  상단 바: [앱명]            [폴더 경로 선택 ▼]   [저장 💾]          │
 ├───────────────┬──────────────────────────────────────────────────┤
-│  사이드바     │  툴바: H1 H2 H3 H4 H5 H6 | B I S | <> ▢ | 🔗 🖼     │
+│  사이드바     │  툴바: H1 H2 H3 | B I S | <> ▢ | 🔗 🖼              │
 │  (리사이즈)   │        " • 1. ☑ | ▦ — ↵                            │
 │               ├───────────────────────────┬──────────────────────┤
 │  [+] 폴더생성 │                           │                      │
@@ -177,9 +177,6 @@ Next.js App (Client)
 | H1 | 제목1 | `Heading1` | `# ` | 줄 접두 | 코어 |
 | H2 | 제목2 | `Heading2` | `## ` | 줄 접두 | 코어 |
 | H3 | 제목3 | `Heading3` | `### ` | 줄 접두 | 코어 |
-| H4 | 제목4 | `Heading4` | `#### ` | 줄 접두 | 코어 |
-| H5 | 제목5 | `Heading5` | `##### ` | 줄 접두 | 코어 |
-| H6 | 제목6 | `Heading6` | `###### ` | 줄 접두 | 코어 |
 | B | 굵게 | `Bold` | `**…**` | 선택 감싸기 | 코어 |
 | I | 기울임 | `Italic` | `*…*` | 선택 감싸기 | 코어 |
 | S | 취소선 | `Strikethrough` | `~~…~~` | 선택 감싸기 | GFM |
@@ -203,6 +200,8 @@ Next.js App (Client)
 | FR-5.3 | 인라인 버튼은 이미 적용된 서식이면 해제(토글)한다 (`isActive`) | 권장 |
 | FR-5.4 | 링크/이미지 버튼은 URL 입력 다이얼로그를 띄운다 | 필수 |
 | FR-5.5 | 주요 버튼에 단축키 매핑(굵게 `Mod-b`, 기울임 `Mod-i` 등) | 권장 |
+
+> **2026-11-12 결정: 툴바 제목 버튼은 H1–H3까지만 제공한다. H4–H6은 문법(`####` 등)으로만 지원하고 프리뷰는 렌더한다.**
 
 > **참고**: 들여쓰기 코드 블록, 참조 링크, 백슬래시 이스케이프, 엔티티 참조는 **문법으로는 지원**하되 별도 툴바 버튼은 두지 않는다(편집기에서 직접 입력). 필요 시 "더보기(⋯)" 메뉴로 확장.
 
@@ -348,14 +347,14 @@ export const boldPlugin: MarkdownPlugin = {
 ### 7.4 팩토리 패턴 예시 — `plugins/heading.ts`
 
 ```typescript
-import { Heading1, Heading2, Heading3, Heading4, Heading5, Heading6 } from "lucide-react";
+import { Heading1, Heading2, Heading3 } from "lucide-react";
 import type { MarkdownPlugin } from "./types";
 import { toggleLinePrefix } from "./helpers";
 
-const icons = [Heading1, Heading2, Heading3, Heading4, Heading5, Heading6];
+const icons = [Heading1, Heading2, Heading3];
 
-/** H1~H6 제목 플러그인 팩토리 */
-export function createHeadingPlugin(level: 1 | 2 | 3 | 4 | 5 | 6): MarkdownPlugin {
+/** H1~H3 제목 플러그인 팩토리 (H4–H6은 버튼 없음, 2026-11-12 결정) */
+export function createHeadingPlugin(level: 1 | 2 | 3): MarkdownPlugin {
   return {
     id: `heading-${level}`,
     label: `제목 H${level}`,
@@ -513,12 +512,14 @@ markdown-editor/
 | 단계 | 범위 | 산출물 |
 |------|------|--------|
 | M1 | 프로젝트 스캐폴딩 | `create-next-app` (TS+Tailwind), Vercel 연결 |
-| M2 | 레이아웃 | 사이드바+컨텐츠 2분할, 리사이즈(FR-1, FR-2.4) |
+| M2 | 레이아웃 + 툴바 완성 | 사이드바+컨텐츠 2분할, 리사이즈(FR-1, FR-2.4) + FR-5 전체 버튼·토글·대화상자·단축키(FR-5, FR-6) |
 | M3 | 저장소 | IndexedDB 스키마, 폴더 CRUD, `+` 버튼(FR-2, FR-6 데이터) |
 | M4 | 에디터/프리뷰 | CodeMirror 6 + unified 50:50, 실시간 렌더(FR-4) |
-| M5 | 플러그인 | `MarkdownPlugin` 인터페이스 + 전체 태그 플러그인(FR-5, FR-6) |
+| M5 | (M2로 통합) | `MarkdownPlugin` 인터페이스는 M1, 전체 태그 플러그인은 M2에서 구현 |
 | M6 | 문서 흐름 | 폴더 선택 저장, 파일 리스트, 클릭 네비게이션(FR-3, FR-7) |
 | M7 | 마감 | 보안(sanitize)·접근성·토스트·dirty check(NFR) |
+
+> 2026-11-12 결정: FR-5 툴바 미구현분(H1–H3 개별, 이미지, 작업 목록, 강제 줄바꿈, 자동 링크, 토글, 링크·이미지 대화상자, 단축키)을 M5에서 M2로 옮겼다.
 
 ---
 
