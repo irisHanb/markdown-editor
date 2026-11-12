@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰(100ms 디바운스, sanitize) + 툴바 12버튼 + `localStorage` 저장·취소·알림. Vitest 8 files·110 tests 통과, `tsc --noEmit` 오류 0건, 정적 export 빌드 통과. 브라우저 수동 검증(`specs/001-single-screen-editor/quickstart.md` 2절)과 Vercel 배포는 미실행. SDD 산출물은 `specs/001-single-screen-editor` 하나뿐이다.
 
-확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. `idb`·Zustand·`react-resizable-panels`는 아직 설치하지 않았다(M2·M3에서 추가).
+확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. 문서 데이터는 M3부터 IndexedDB(`idb` 8.0.4, `src/lib/workspace/`)에 저장하고 M1의 `localStorage["mdeditor:v1"]`은 첫 실행 시 옮긴 뒤 지운다(헌장 1.0.2 원칙 V). 레이아웃 설정만 `localStorage`. Zustand·`react-resizable-panels`는 쓰지 않는다.
 
 ### 마일스톤 — `docs/requirement.md §12`가 기준(canonical)
 
@@ -16,13 +16,13 @@ M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰
 |------|------|------|
 | M1 | 스캐폴딩 + 단일 화면(에디터·프리뷰·툴바 12버튼·로컬 저장) | ✅ 구현 완료 (수동 검증·배포 잔여) |
 | M2 | **레이아웃(사이드바+컨텐츠 2분할, 리사이즈) + 툴바 완성(FR-5 전체: H1–H3·이미지·작업 목록·강제 줄바꿈·자동 링크·토글·대화상자·단축키)** | 🔶 M2-a·M2-b 구현 완료 (브라우저 수동 검증 잔여) |
-| M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼 | ⬜ 미착수 (← **다음 작업**) |
+| M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼, 사이드바 트리·새 문서 | ✅ 구현 완료 (브라우저 수동 검증 잔여) |
 | M4 | 에디터/프리뷰 — CodeMirror 6 + unified 50:50, 실시간 렌더 | 🔶 M1에서 단일 문서분 완료 |
 | M5 | (M2로 통합, 2026-11-12) | — |
-| M6 | 문서 흐름 — 폴더 선택 저장, 파일 리스트, 네비게이션 | ⬜ 미착수 |
+| M6 | 문서 흐름 — 폴더 선택 저장, 파일 리스트, 네비게이션 | ⬜ 미착수 (← **다음 작업**) |
 | M7 | 마감 — sanitize·접근성·토스트·dirty check | 🔶 sanitize·알림 완료, dirty check 미착수 |
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
+**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
 
 
 ## 핵심 아키텍처 원칙 (반드시 준수)
@@ -103,5 +103,5 @@ UI·HTML·SVG·슬라이드 생성 시 **`.claude/rules/anti-ai-slop.md` 강제*
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/003-full-toolbar/plan.md` (M2-b 툴바 18버튼·토글·대화상자·단축키). M2-a 레이아웃은 `specs/002-sidebar-layout`(구현 완료).
+`specs/004-folder-storage/plan.md` (M3 IndexedDB 폴더·문서 저장소, 사이드바 트리). M2는 `specs/002-sidebar-layout`·`specs/003-full-toolbar`(구현 완료).
 <!-- SPECKIT END -->

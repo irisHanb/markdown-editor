@@ -53,9 +53,11 @@
 ### V. 로컬 우선·서버리스
 
 - 앱은 계정·백엔드·서버 API 없이 정적 호스팅과 클라이언트 코드만으로 동작해야 합니다(MUST).
-- 문서는 사용자 브라우저에만 저장합니다. 영속 저장소는 IndexedDB(`idb`)의
-  `folders`·`documents` 스토어입니다. 단일 화면 단계(M1)만 `localStorage`(`mdeditor:v1`)를
-  허용하며, 폴더 도입 시 IndexedDB로 이관해야 합니다(MUST).
+- 문서 데이터(폴더·문서)는 사용자 브라우저에만 저장합니다. 문서 데이터의 영속 저장소는
+  IndexedDB(`idb`)의 `folders`·`documents` 스토어입니다. 단일 화면 단계(M1)만 `localStorage`
+  (`mdeditor:v1`)를 허용하며, 폴더 도입 시 IndexedDB로 옮겨야 합니다(MUST).
+- 문서가 아닌 UI 설정(레이아웃 너비 등)은 `localStorage`에 둘 수 있습니다. 잃어도 문서 데이터가
+  손실되지 않는 값에 한합니다.
 - 새로고침·재방문 후 저장한 문서가 보존돼야 합니다(MUST, NFR-7).
 - 미저장 변경이 있는 상태로 이탈하면 경고해야 합니다(SHOULD, FR-C-4).
 
@@ -117,4 +119,4 @@
   확인합니다. 정당화되지 않은 위반은 구현 전에 해소해야 합니다(MUST).
 - 런타임 개발 지침은 `CLAUDE.md`를 따릅니다.
 
-**Version**: 1.0.1 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-12
+**Version**: 1.0.2 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-12
