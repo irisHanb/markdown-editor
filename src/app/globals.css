@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* 색 토큰 — 무채색 + 액센트 1색. 보조 글자색은 WCAG AA 4.5:1 이상(research R10). */
+:root {
+  --accent: #3b5bdb;
+  --accent-hover: #2f4ec4;
+  --fg: #1c2434;
+  --fg-muted: #6b7385;
+  --border: #eaedf3;
+  --border-soft: #eef1f6;
+  --editor-bg: #fbfcfe;
+  --toast-bg: #1c2434;
+  --sidebar-w: 260px;
+  --editor-ratio: 50%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: #ffffff;
+  color: var(--fg);
+  font-family: var(--font-sans), -apple-system, sans-serif;
+}
+
+/* 프리뷰 타이포 — 시안 값(docs/design/project/Markdown Editor.dc.html 19–43행).
+   research R10 변경: radius ≤ 8px, 인용 radius 0, 표 링 그림자 → 1px border, del·보조색 대비 4.5:1 이상. */
+.md-preview { color: #2b3440; font-size: 15.5px; line-height: 1.78; letter-spacing: -0.003em; }
+.md-preview > *:first-child { margin-top: 0; }
+.md-preview h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: #141b2b; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 2px solid #eef1f6; line-height: 1.3; }
+.md-preview h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.015em; color: #1c2434; margin: 38px 0 14px; }
+.md-preview h3 { font-size: 17px; font-weight: 700; color: #29313f; margin: 26px 0 10px; }
+.md-preview h4, .md-preview h5, .md-preview h6 { font-size: 15.5px; font-weight: 700; color: #29313f; margin: 22px 0 8px; }
+.md-preview p { margin: 0 0 14px; }
+.md-preview a { color: var(--accent); text-decoration: none; border-bottom: 1px solid #c5d0f5; padding-bottom: 1px; transition: color 0.15s, border-color 0.15s; }
+.md-preview a:hover { color: #2843b8; border-color: var(--accent); }
+.md-preview strong { font-weight: 700; color: #1c2434; }
+.md-preview em { font-style: italic; }
+.md-preview del { color: var(--fg-muted); }
+.md-preview ol, .md-preview ul { margin: 0 0 16px; padding-left: 24px; }
+.md-preview ul { list-style: disc; }
+.md-preview ol { list-style: decimal; }
+.md-preview li { margin: 5px 0; }
+.md-preview li::marker { color: #8a93a6; }
+.md-preview blockquote { margin: 0 0 18px; padding: 12px 18px; background: #f5f7ff; border-left: 3px solid var(--accent); border-radius: 0; color: #4a5878; font-size: 14.5px; }
+.md-preview blockquote p:last-child { margin: 0; }
+.md-preview hr { border: 0; border-top: 1px solid #e8ecf3; margin: 30px 0; }
+.md-preview code { font-family: var(--font-mono), ui-monospace, monospace; font-size: 0.86em; background: #eef1f8; color: #3a4cb0; padding: 2px 6px; border-radius: 5px; font-weight: 500; }
+.md-preview pre { background: #1a2030; color: #e6eaf2; padding: 18px 20px; border-radius: 8px; overflow-x: auto; margin: 0 0 18px; }
+.md-preview pre code { background: none; color: inherit; padding: 0; font-size: 13.5px; }
+.md-preview table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 0 0 20px; font-size: 14.5px; overflow: hidden; border-radius: 8px; border: 1px solid #e6eaf2; }
+.md-preview thead th { background: #f6f8fc; color: #2a3346; font-weight: 700; text-align: left; padding: 11px 16px; border-bottom: 1px solid #e6eaf2; }
+.md-preview tbody td { padding: 10px 16px; border-bottom: 1px solid #eef1f6; }
+.md-preview tbody tr:last-child td { border-bottom: 0; }
+.md-preview tbody tr:nth-child(even) { background: #fafbfd; }
+.md-preview tbody td:first-child { white-space: nowrap; }
+.md-preview img { max-width: 100%; }
+.md-preview kbd { font-family: var(--font-mono), ui-monospace, monospace; font-size: 0.82em; padding: 1px 6px; border: 1px solid #d7deea; border-radius: 4px; background: #f6f8fc; }
+.md-preview li.task-list-item { list-style: none; }
+.md-preview li.task-list-item input { margin: 0 6px 0 -20px; }
+
+/* 입력 대화상자 배경 — 단색, blur 없음 (헌장 원칙 VI) */
+dialog::backdrop { background: rgba(20, 27, 43, 0.24); }
