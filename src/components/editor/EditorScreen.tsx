@@ -4,16 +4,16 @@ import type { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResizeHandle } from "@/components/layout/ResizeHandle";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SAMPLE } from "@/content/sample";
+import { useWorkspace } from "@/components/workspace/useWorkspace";
 import { strings } from "@/content/strings";
-import { applySave, resolveInitial, revert, type ToastKey, type ToastKind } from "@/lib/document/session";
+import { applySave, revert, type ToastKey, type ToastKind } from "@/lib/document/session";
 import { DEFAULT_LAYOUT, EDITOR, type Layout, loadLayout, SIDEBAR, saveLayout } from "@/lib/layout/layout";
 import { renderMarkdown } from "@/lib/markdown/pipeline";
-import { type LoadResult, loadDocument, saveDocument } from "@/lib/storage/local-document";
 import { countChars, countLines } from "@/lib/text/count";
 import { plugins } from "@/plugins";
 import { formatShortcut } from "@/plugins/shortcut";
 import type { DialogValues, EditorChange, EditorState, MarkdownPlugin } from "@/plugins/types";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { type DialogRequest, InsertDialog } from "./InsertDialog";
 import { type KeyBinding, MarkdownEditor } from "./MarkdownEditor";
 import { Preview } from "./Preview";
@@ -72,11 +72,13 @@ function PaneHeader({ dotColor, label }: { dotColor: string; label: string }) {
 
 export function EditorScreen() {
   const viewRef = useRef<EditorView | null>(null);
-  const baselineRef = useRef<string>(SAMPLE);
+  const baselineRef = useRef<string>("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [initialDoc, setInitialDoc] = useState<string | null>(null);
   const [derived, setDerived] = useState<Derived | null>(null);
+  // 폴더·문서 저장소 (specs/004-folder-storage). 열린 문서가 바뀌면 편집기를 새로 만든다(research R4).
+  const workspace = useWorkspace();
+  const current = workspace.current;
   const [toast, setToast] = useState<ToastState>(null);
   // 레이아웃 (specs/002-sidebar-layout). 첫 화면 CSS 변수는 layout.tsx 인라인 스크립트가 이미 적용했다.
   const sidebarRef = useRef<HTMLElement>(null);
@@ -91,14 +93,7 @@ export function EditorScreen() {
   // 정적 export라 첫 렌더에는 플랫폼을 모른다 — 마운트 후 판정해 툴팁에 단축키를 붙인다 (research R7).
   const [isMac, setIsMac] = useState<boolean | null>(null);
 
-  // 시작: 저장본 또는 샘플 (FR-012, FR-015). 저장소는 브라우저에만 있으므로 마운트 후 읽는다.
   useEffect(() => {
-    const storage = getStorage();
-    const load: LoadResult = storage ? loadDocument(storage) : { ok: false };
-    const { doc, baseline } = resolveInitial(load, SAMPLE);
-    baselineRef.current = baseline;
-    setInitialDoc(doc);
-    setDerived(derive(doc));
     setLayout(loadLayout(getStorage()));
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
     return () => {
@@ -106,6 +101,16 @@ export function EditorScreen() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // 다른 문서를 열면 baseline·프리뷰·활성 표시를 그 문서로 맞춘다.
+  const currentId = current?.id ?? null;
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    baselineRef.current = current?.content ?? "";
+    setDerived(current ? derive(current.content) : null);
+    setActiveIds(new Set());
+    // 문서 id가 바뀔 때만 — 저장으로 current.content가 바뀌어도 다시 계산하지 않는다.
+  }, [currentId]);
 
   const handleChange = useCallback((doc: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -118,16 +123,27 @@ export function EditorScreen() {
     toastTimerRef.current = setTimeout(() => setToast(null), TOAST_MS);
   }, []);
 
-  const handleSave = useCallback(() => {
+  // 디바운스 값이 아니라 현재 편집기 문서를 저장한다 — 마지막 100ms 입력 누락 방지 (M1 research R8).
+  const { save } = workspace;
+  const handleSave = useCallback(async (): Promise<{ ok: boolean }> => {
     const view = viewRef.current;
-    if (!view) return;
-    // 디바운스 값이 아니라 현재 문서를 저장한다 — 마지막 100ms 입력 누락 방지 (research R8).
+    if (!view) return { ok: false };
     const doc = view.state.doc.toString();
-    const storage = getStorage();
-    const result = applySave(storage ? saveDocument(storage, doc) : { ok: false }, doc, baselineRef.current);
+    const saved = await save(doc);
+    const result = applySave(saved, doc, baselineRef.current);
     baselineRef.current = result.baseline;
     showToast(result.toast, result.kind);
-  }, [showToast]);
+    return saved;
+  }, [save, showToast]);
+
+  // 문서 전환·새 문서 전에 넘기는 편집기 상태 (FR-010)
+  const editorGuard = useMemo(
+    () => ({
+      isDirty: () => (viewRef.current ? viewRef.current.state.doc.toString() !== baselineRef.current : false),
+      saveCurrent: handleSave,
+    }),
+    [handleSave],
+  );
 
   // 툴바 클릭·단축키가 같은 경로를 쓴다 (specs/003-full-toolbar plan "주요 흐름").
   const runPlugin = useCallback((plugin: MarkdownPlugin) => {
@@ -203,9 +219,25 @@ export function EditorScreen() {
           <span className="text-[14.5px] font-bold tracking-[-0.01em] text-[#2a3346]">{strings.appName}</span>
         </div>
       </header>
+      {workspace.storageUnavailable && (
+        <p role="status" className="m-0 flex-none border-b border-[#f5d9b0] bg-[#fff4e5] px-[18px] py-1.5 text-[12.5px] text-[var(--fg)]">
+          {strings.storageUnavailable}
+        </p>
+      )}
 
       <div className="flex min-h-0 flex-1 overflow-x-auto">
-        <Sidebar ref={sidebarRef} />
+        <Sidebar
+          ref={sidebarRef}
+          folders={workspace.folders}
+          docs={workspace.docs}
+          currentId={currentId}
+          onCreateFolder={workspace.createFolder}
+          onToggleFolder={workspace.toggleFolder}
+          onOpenDocument={(id) => void workspace.requestOpen(id, editorGuard)}
+          onCreateDocument={(folderId, title) => void workspace.createDocument(folderId, title, editorGuard)}
+          onRename={workspace.rename}
+          onDelete={workspace.remove}
+        />
         <ResizeHandle
           label={strings.sidebarHandleLabel}
           bounds={SIDEBAR}
@@ -217,7 +249,7 @@ export function EditorScreen() {
         />
         <section aria-label={strings.contentLabel} className="flex min-w-[480px] flex-1 flex-col">
           <div className="flex flex-none items-center border-b border-[var(--border)] px-3.5 py-1.5">
-            <Toolbar onRun={runPlugin} activeIds={activeIds} titleOf={titleOf} />
+            <Toolbar onRun={runPlugin} activeIds={activeIds} titleOf={titleOf} disabled={!current} />
           </div>
 
           <div ref={splitRowRef} className="flex min-h-0 flex-1">
@@ -226,14 +258,17 @@ export function EditorScreen() {
               style={{ flex: "0 0 var(--editor-ratio)" }}
             >
               <PaneHeader dotColor="var(--accent)" label={strings.editorHeader} />
-              {initialDoc !== null && (
+              {current ? (
                 <MarkdownEditor
-                  initialDoc={initialDoc}
+                  key={current.id}
+                  initialDoc={current.content}
                   onChange={handleChange}
                   onSelection={handleSelection}
                   bindings={bindings}
                   viewRef={viewRef}
                 />
+              ) : (
+                workspace.ready && <p className="m-0 px-[26px] pt-6 text-sm text-[var(--fg-muted)]">{strings.emptyEditor}</p>
               )}
             </div>
             <ResizeHandle
@@ -255,14 +290,17 @@ export function EditorScreen() {
           </div>
 
           <StatusBar
+            path={current ? `${workspace.folders.find((f) => f.id === current.folderId)?.name ?? ""} / ${current.title}` : null}
             charCount={derived?.chars ?? 0}
             lineCount={derived?.lines ?? 1}
+            disabled={!current}
             onCancel={handleCancel}
-            onSave={handleSave}
+            onSave={() => void handleSave()}
           />
         </section>
       </div>
       <InsertDialog request={dialog} onSubmit={submitDialog} onClose={closeDialog} />
+      <ConfirmDialog request={workspace.confirm} onChoose={workspace.resolveConfirm} />
       <Toast message={toast ? strings[toast.key] : null} kind={toast?.kind ?? "success"} />
     </div>
   );

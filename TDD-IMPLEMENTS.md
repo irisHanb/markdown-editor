@@ -15,6 +15,10 @@
 | M2b-toggle | 토글·활성 판정 (FR-005–FR-009) | `tests/plugins/helpers.test.ts`, `tests/plugins/plugins.test.ts` | GREEN |
 | M2b-dialog | 대화상자 open·submit (FR-010–FR-014) | `tests/plugins/helpers.test.ts`, `tests/plugins/plugins.test.ts` | GREEN |
 | M2b-shortcut | 단축키 배정·표기 (FR-019, FR-020) | `tests/plugins/format-shortcut.test.ts` | GREEN |
+| M3-names | 이름 규칙·새 문서 이름·정렬·다음 문서 (FR-007, FR-013, FR-016) | `tests/lib/workspace/names.test.ts` | GREEN |
+| M3-repo | 저장소 계약 — IndexedDB·메모리 (FR-001, FR-008, FR-015) | `tests/lib/workspace/repository.test.ts` | GREEN |
+| M3-bootstrap | 기존 문서 옮기기·첫 방문 샘플 (FR-002–FR-004) | `tests/lib/workspace/bootstrap.test.ts` | GREEN |
+| M3-switch | 저장하지 않은 변경 처리 순서 (FR-010, SC-005) | `tests/lib/workspace/switch.test.ts` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -58,3 +62,17 @@
 | `npm test` | 10 files, 229 tests passed, 실패 0건 |
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | `out/index.html` 생성 |
+- 2026-11-12 M3 names·repo RED: `Cannot find package '@/lib/workspace/names'`, `Cannot find package '@/lib/workspace/idb-repository'`
+- 2026-11-12 M3 names·repo GREEN: 12 files, 267 tests passed (IndexedDB 연결이 versionchange에서 닫히지 않아 deleteDatabase가 막히던 문제 수정)
+- 2026-11-12 M3-bootstrap RED: `Cannot find package '@/lib/workspace/bootstrap'`
+- 2026-11-12 M3-bootstrap GREEN: lib 7 files, 89 tests passed (resolveInitial 제거)
+- 2026-11-12 M3-switch RED: `Cannot find package '@/lib/workspace/switch'`
+- 2026-11-12 M3-switch GREEN
+
+## 품질 게이트 — M3 (2026-11-12)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 14 files, 280 tests passed (연속 2회). 첫 실행에서 `perf.test.ts` 1건이 337ms로 실패했으나 단독 2회·전체 2회 재실행 모두 통과 — 실행 시점 CPU 부하로 판단 |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 |

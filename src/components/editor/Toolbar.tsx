@@ -11,9 +11,11 @@ type Props = {
   activeIds: ReadonlySet<string>;
   /** 툴팁 문자열 (단축키 표기 포함). 없으면 label */
   titleOf?: (plugin: MarkdownPlugin) => string;
+  /** 열린 문서가 없을 때 (specs/004-folder-storage) */
+  disabled?: boolean;
 };
 
-export function Toolbar({ onRun, activeIds, titleOf = (p) => p.label }: Props) {
+export function Toolbar({ onRun, activeIds, titleOf = (p) => p.label, disabled = false }: Props) {
   return (
     <div role="toolbar" aria-label={strings.toolbarLabel} className="flex flex-wrap items-center gap-0.5">
       {pluginGroups.map((group, i) => (
@@ -29,10 +31,11 @@ export function Toolbar({ onRun, activeIds, titleOf = (p) => p.label }: Props) {
                 aria-label={plugin.label}
                 aria-pressed={pressed}
                 title={titleOf(plugin)}
+                disabled={disabled}
                 // 클릭해도 편집 영역 선택·포커스를 유지한다
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onRun(plugin)}
-                className={`inline-flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] ${
+                className={`inline-flex h-[34px] w-[34px] cursor-pointer items-center disabled:cursor-not-allowed disabled:opacity-40 justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)] ${
                   pressed ? "bg-[#e8edfb] text-[var(--accent)]" : "text-[#4a5568] hover:bg-[#f1f3f9] hover:text-[#1f2a44]"
                 }`}
               >
