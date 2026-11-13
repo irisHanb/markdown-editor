@@ -22,9 +22,9 @@ import type { MarkdownPlugin } from "./types";
 // 구분선은 묶음 경계에서 툴바가 그리므로 인덱스 상수가 없다.
 export const pluginGroups: MarkdownPlugin[][] = [
   [heading1, heading2, heading3],
-  [bold, italic, strikethrough, inlineCode],
+  [bold, italic, strikethrough, inlineCode, codeBlock], // 코드 버튼 2개를 나란히 (007 FR-009)
   [link, image, autolink],
-  [blockquote, codeBlock, bulletList, orderedList, taskList],
+  [blockquote, bulletList, orderedList, taskList],
   [table, horizontalRule, hardBreak],
 ];
 

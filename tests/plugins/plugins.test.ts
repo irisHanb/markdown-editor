@@ -1,3 +1,4 @@
+import { SquareCode } from "lucide-react";
 import { describe, expect, it } from "vitest";
 import { renderMarkdown } from "@/lib/markdown/pipeline";
 import { pluginGroups, plugins } from "@/plugins";
@@ -7,9 +8,9 @@ import { parse, show } from "./fixture";
 // specs/003-full-toolbar/contracts/plugin-api.md "18개 플러그인" 표 순서
 const ORDER = [
   "heading-1", "heading-2", "heading-3",
-  "bold", "italic", "strikethrough", "inline-code",
+  "bold", "italic", "strikethrough", "inline-code", "code-block", // 007 FR-009 — 코드 버튼 2개를 나란히
   "link", "image", "autolink",
-  "blockquote", "code-block", "bullet-list", "ordered-list", "task-list",
+  "blockquote", "bullet-list", "ordered-list", "task-list",
   "table", "horizontal-rule", "hard-break",
 ];
 
@@ -27,8 +28,8 @@ export function state(doc: string, selectionStart: number, selectionEnd = select
 }
 
 describe("레지스트리 (FR-001)", () => {
-  it("묶음 5개 [3,4,3,5,3] = 18개, 표 순서와 일치", () => {
-    expect(pluginGroups.map((g) => g.length)).toEqual([3, 4, 3, 5, 3]);
+  it("묶음 5개 [3,5,3,4,3] = 18개, 표 순서와 일치", () => {
+    expect(pluginGroups.map((g) => g.length)).toEqual([3, 5, 3, 4, 3]);
     expect(plugins).toHaveLength(18);
     expect(plugins.map((p) => p.id)).toEqual(ORDER);
   });
@@ -224,5 +225,13 @@ describe("강제 줄바꿈 미리보기", () => {
   });
   it("다음 줄을 쓰면 <br>", () => {
     expect(renderMarkdown(`${insert("hello")}world`)).toContain("<br>");
+  });
+});
+
+// 007 FR-008 — 박스 안 <> 아이콘(사용자 지정). [인라인 코드] <>(박스 없음)와 구별돼야 한다
+describe("코드 블록 아이콘", () => {
+  it("SquareCode이고 인라인 코드 아이콘과 다름", () => {
+    expect(byId("code-block").icon).toBe(SquareCode);
+    expect(byId("code-block").icon).not.toBe(byId("inline-code").icon);
   });
 });

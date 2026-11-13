@@ -44,3 +44,14 @@ describe("입력 칸 테두리 3:1 이상", () => {
     expect(read(file).split("border-[var(--input-border)]").length - 1).toBeGreaterThanOrEqual(2);
   });
 });
+
+// 007 FR-010, 헌장 1.1.0 원칙 VI 예외 — 문법 강조 색도 코드 배경 대비 4.5:1 이상
+describe("코드 하이라이트 색 4.5:1 이상", () => {
+  const rules = [...css.matchAll(/\.md-preview \.hljs-[^{]+\{[^}]*color:\s*(#[0-9a-fA-F]{6})/g)].map((m) => m[1]);
+  it("규칙이 있음", () => {
+    expect(rules.length).toBeGreaterThanOrEqual(5);
+  });
+  it.each(rules.map((c) => [c]))("%s / #1a2030", (c) => {
+    expect(contrastRatio(c, "#1a2030")).toBeGreaterThanOrEqual(4.5);
+  });
+});

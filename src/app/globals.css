@@ -56,6 +56,20 @@ body {
 .md-preview code { font-family: var(--font-mono), ui-monospace, monospace; font-size: 0.86em; background: #eef1f8; color: #3a4cb0; padding: 2px 6px; border-radius: 5px; font-weight: 500; }
 .md-preview pre { background: #1a2030; color: #e6eaf2; padding: 18px 20px; border-radius: 8px; overflow-x: auto; margin: 0 0 18px; }
 .md-preview pre code { background: none; color: inherit; padding: 0; font-size: 13.5px; }
+/* 코드 블록 문법 강조 — 헌장 1.1.0 원칙 VI 예외(여러 색 허용). 모두 코드 배경 #1a2030 대비 4.5:1 이상
+   (tests/a11y/contrast.test.ts). 그라데이션·글로우 없음. specs/007-usability-fixes FR-010 */
+.md-preview .hljs-keyword, .md-preview .hljs-doctag, .md-preview .hljs-template-tag, .md-preview .hljs-type { color: #ff7b72; }
+.md-preview .hljs-title { color: #d2a8ff; }
+.md-preview .hljs-attr, .md-preview .hljs-attribute, .md-preview .hljs-literal, .md-preview .hljs-meta, .md-preview .hljs-number, .md-preview .hljs-operator, .md-preview .hljs-variable, .md-preview .hljs-selector-attr, .md-preview .hljs-selector-class, .md-preview .hljs-selector-id { color: #79c0ff; }
+.md-preview .hljs-string, .md-preview .hljs-regexp { color: #a5d6ff; }
+.md-preview .hljs-built_in, .md-preview .hljs-symbol { color: #ffa657; }
+.md-preview .hljs-comment, .md-preview .hljs-formula { color: #8b949e; font-style: italic; }
+.md-preview .hljs-name, .md-preview .hljs-quote, .md-preview .hljs-selector-tag, .md-preview .hljs-selector-pseudo, .md-preview .hljs-tag { color: #7ee787; }
+.md-preview .hljs-bullet, .md-preview .hljs-section { color: #f2cc60; }
+.md-preview .hljs-addition { color: #aff5b4; }
+.md-preview .hljs-deletion { color: #ffdcd7; }
+.md-preview .hljs-emphasis { font-style: italic; }
+.md-preview .hljs-strong { font-weight: 700; }
 .md-preview table { border-collapse: separate; border-spacing: 0; width: 100%; margin: 0 0 20px; font-size: 14.5px; overflow: hidden; border-radius: 8px; border: 1px solid #e6eaf2; }
 .md-preview thead th { background: #f6f8fc; color: #2a3346; font-weight: 700; text-align: left; padding: 11px 16px; border-bottom: 1px solid #e6eaf2; }
 .md-preview tbody td { padding: 10px 16px; border-bottom: 1px solid #eef1f6; }

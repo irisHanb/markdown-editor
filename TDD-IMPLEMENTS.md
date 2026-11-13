@@ -29,6 +29,8 @@
 | U1-edit-spot | 툴바 클릭 후 편집 위치 — 줄 접두 커서 유지·표 제목 선택·자동 링크 (007 FR-001–FR-003) | `tests/plugins/helpers.test.ts`, `tests/plugins/plugins.test.ts` | GREEN |
 | U1-hard-break | 강제 줄바꿈 공백 2개 방식·미리보기 (007 FR-004) | `tests/plugins/plugins.test.ts` | GREEN |
 | U1-shell | 로고 링크·토스트 제거 (007 FR-006·FR-007) | `tests/a11y/names.test.tsx` | GREEN |
+| U1-codeblock-icon | 코드 블록 아이콘 박스 안 `<>`(`SquareCode`)·인라인 코드 옆 배치 (007 FR-008·FR-009) | `tests/plugins/plugins.test.ts` | GREEN |
+| U1-highlight | 코드 블록 문법 강조·허용 목록 XSS 회귀·성능·색 대비 (007 FR-010, 헌장 1.1.0) | `tests/markdown/highlight.test.ts`, `tests/markdown/conformance.test.ts`, `tests/a11y/contrast.test.ts` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -120,3 +122,16 @@
 | `npm test` | 20 files, 360 tests passed, 실패 0건 |
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | 성공 |
+- 2026-11-13 U1-codeblock-icon RED: `expected [Function SquareCode] to be [Function SquareTerminal]` 1건 → GREEN: `SquareTerminal`로 교체
+- 2026-11-13 U1-codeblock-icon 재수정 RED: 2 failed(묶음 길이 `[3,4,3,5,3]`, 아이콘 `SquareTerminal`) → GREEN: `Braces`, 2번째 묶음 끝으로 이동
+- 2026-11-13 U1-highlight RED: 4 failed — 언어 지정 강조, 자동 판별 강조, hljs span 클래스 유지(현재 스키마가 제거), 하이라이트 색 규칙 0개
+- 2026-11-13 U1-highlight GREEN: 21 files, 380 tests passed. `rehype-highlight` 7.0.2(sanitize 앞), 스키마 `hljs`·`hljs-*`만 추가, 자동 판별 후보 9개(css 제외 — 포함 시 JS·HTML·TS를 css로 판별). 렌더 중앙값: 샘플 1만 자 31.1 → 32.6ms, 자동 판별 코드 블록 125개 28.0ms, 언어 지정 125개 15.9ms. 첫 전체 실행에서 `perf.test.ts` 1건이 375ms(테스트 소요 시간)로 실패했으나 단독 3회·전체 1회 재실행 모두 통과 — 실행 시점 부하로 판단
+
+## 품질 게이트 — 007 코드 블록 아이콘·하이라이트 (2026-11-13)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 21 files, 380 tests passed, 실패 0건(재실행) |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 |
+- 2026-11-13 U1-codeblock-icon 3차 RED: `expected [Function Braces] to be [Function SquareCode]` → GREEN: 사용자 지정 `SquareCode`
