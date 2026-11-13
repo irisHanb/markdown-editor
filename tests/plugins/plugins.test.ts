@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { renderMarkdown } from "@/lib/markdown/pipeline";
 import { pluginGroups, plugins } from "@/plugins";
 import type { EditorChange, EditorState, MarkdownPlugin } from "@/plugins/types";
 import { parse, show } from "./fixture";
@@ -13,6 +14,7 @@ const ORDER = [
 ];
 
 const TABLE = "\n| 제목 | 설명 |\n|---|---|\n| 내용1 | 내용2 |\n";
+const HEAD = TABLE.indexOf("제목");
 
 export function byId(id: string): MarkdownPlugin {
   const p = plugins.find((x) => x.id === id);
@@ -42,8 +44,8 @@ describe("레지스트리 (FR-001)", () => {
 
 // 표기 [ ] = 선택, | = 커서 (본문에 [ ] | 가 없는 경우)
 const marked: [id: string, input: string, expected: string][] = [
-  ["heading-1", "ab|c", "[# abc]"],
-  ["heading-2", "ab|c", "[## abc]"],
+  ["heading-1", "ab|c", "# ab|c"],
+  ["heading-2", "ab|c", "## ab|c"],
   ["heading-3", "[x\ny]", "[### x\n### y]"],
   ["bold", "a[강조]b", "a**[강조]**b"],
   ["bold", "a|b", "a**[굵은 텍스트]**b"],
@@ -53,28 +55,29 @@ const marked: [id: string, input: string, expected: string][] = [
   ["strikethrough", "a|b", "a~~[취소선 텍스트]~~b"],
   ["inline-code", "a[x]b", "a`[x]`b"],
   ["inline-code", "a|b", "a`[코드]`b"],
-  ["autolink", "|", "<[https://]>"],
+  ["autolink", "|", "<https://|>"], // 007 FR-003 — 주소를 이어서 입력
   ["autolink", "[a.com]", "<[a.com]>"],
   ["blockquote", "[x\ny]", "[> x\n> y]"],
-  ["blockquote", "ab|c", "[> abc]"],
+  ["blockquote", "ab|c", "> ab|c"],
   ["code-block", "a[x]b", "a\n```\n[x]\n```\nb"],
   ["code-block", "a|b", "a\n```\n[코드]\n```\nb"],
   ["bullet-list", "[x\ny]", "[- x\n- y]"],
-  ["bullet-list", "ab|c", "[- abc]"],
+  ["bullet-list", "ab|c", "- ab|c"],
   ["ordered-list", "[x\ny]", "[1. x\n2. y]"],
-  ["ordered-list", "ab|c", "[1. abc]"],
+  ["ordered-list", "ab|c", "1. ab|c"],
   ["horizontal-rule", "a[xy]b", "a\n\n---\n\n|b"],
   ["horizontal-rule", "a|b", "a\n\n---\n\n|b"],
-  ["hard-break", "foo|", "foo\\\n|"],
-  ["hard-break", "[foo]bar", "foo\\\n|bar"],
+  ["hard-break", "foo|", "foo  \n|"], // 007 FR-004 — 줄 끝 공백 2개
+  ["hard-break", "[foo]bar", "foo  \n|bar"],
 ];
 
 // 본문에 [ ] | 가 들어가는 플러그인은 객체로 직접 비교
 const literal: [id: string, input: EditorState, expected: EditorChange][] = [
   ["task-list", state("x\ny", 0, 3), state("- [ ] x\n- [ ] y", 0, 15)],
-  ["task-list", state("abc", 1), state("- [ ] abc", 0, 9)],
-  ["table", state("axyb", 1, 3), state(`a${TABLE}b`, 1 + TABLE.length)],
-  ["table", state("ab", 1), state(`a${TABLE}b`, 1 + TABLE.length)],
+  ["task-list", state("abc", 1), state("- [ ] abc", 7)],
+  // 007 FR-002 — 첫 제목 칸 "제목" 선택
+  ["table", state("axyb", 1, 3), state(`a${TABLE}b`, 1 + HEAD, 3 + HEAD)],
+  ["table", state("ab", 1), state(`a${TABLE}b`, 1 + HEAD, 3 + HEAD)],
 ];
 
 describe("플러그인 apply — 추가 (US1)", () => {
@@ -97,9 +100,9 @@ const TOGGLES = [
 
 describe("줄 접두 교체·해제", () => {
   it.each([
-    ["heading-1", "## 제목|", "[# 제목]"],
-    ["heading-2", "## 제목|", "[제목]"],
-    ["heading-1", "#### 제목|", "[# 제목]"],
+    ["heading-1", "## 제목|", "# 제목|"],
+    ["heading-2", "## 제목|", "제목|"],
+    ["heading-1", "#### 제목|", "# 제목|"],
     ["ordered-list", "[- a\n- b]", "[1. a\n2. b]"],
     ["bullet-list", "[- a\n- b]", "[a\nb]"],
     ["bullet-list", "[1. a\n2. b]", "[- a\n- b]"],
@@ -210,5 +213,16 @@ describe("link·image dialog", () => {
 
   it("링크 안에서 이미지 버튼은 삽입 모드", () => {
     expect(dialogOf("image").open(state("[문서](https://a.com)", 2)).mode).toBe("insert");
+  });
+});
+
+// 007 FR-004 — 다음 줄을 쓰기 전에는 미리보기에 아무것도 더해지지 않고, 쓰면 <br>
+describe("강제 줄바꿈 미리보기", () => {
+  const insert = (doc: string) => byId("hard-break").apply(state(doc, doc.length)).doc;
+  it("문단 끝에서는 출력 없음", () => {
+    expect(renderMarkdown(insert("hello"))).toBe("<p>hello</p>");
+  });
+  it("다음 줄을 쓰면 <br>", () => {
+    expect(renderMarkdown(`${insert("hello")}world`)).toContain("<br>");
   });
 });

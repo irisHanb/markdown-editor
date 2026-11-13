@@ -143,3 +143,13 @@ describe("건너뛰기 버튼 (FR-007)", () => {
     expect(firstInteractiveText(editorScreen())).toBe(strings.skipToContent);
   });
 });
+
+// 007 FR-006·FR-007
+describe("앱 골격 — 로고 링크·알림", () => {
+  it("로고는 대시보드로 가는 링크", () => {
+    expect(editorScreen()).toMatch(new RegExp(`<a[^>]*href="#/dashboard"[^>]*>[\\s\\S]*?${strings.appName}[\\s\\S]*?</a>`));
+  });
+  it("토스트(role=status 알림 띠)가 없음 — 알림은 모달", () => {
+    expect(editorScreen()).not.toContain('role="status"');
+  });
+});

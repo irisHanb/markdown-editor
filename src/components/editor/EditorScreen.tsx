@@ -10,6 +10,7 @@ import { useHashRoute } from "@/components/workspace/useHashRoute";
 import { useWorkspace } from "@/components/workspace/useWorkspace";
 import { strings } from "@/content/strings";
 import { revert, type ToastKind } from "@/lib/document/session";
+import type { ConfirmRequest } from "@/components/workspace/useWorkspace";
 import { DEFAULT_LAYOUT, EDITOR, type Layout, loadLayout, SIDEBAR, saveLayout } from "@/lib/layout/layout";
 import { renderMarkdown } from "@/lib/markdown/pipeline";
 import { formatRoute, type Route } from "@/lib/route/route";
@@ -25,15 +26,12 @@ import { type DialogRequest, InsertDialog } from "./InsertDialog";
 import { type KeyBinding, MarkdownEditor } from "./MarkdownEditor";
 import { Preview } from "./Preview";
 import { StatusBar } from "./StatusBar";
-import { Toast } from "./Toast";
 import { Toolbar } from "./Toolbar";
 
 // 입력 멈춤 → 프리뷰 갱신 예산 150ms = 디바운스 100ms + 렌더 ≤ 50ms (research R6, FR-004)
 const DEBOUNCE_MS = 100;
-const TOAST_MS = 1900; // FR-014
 
 type Derived = { html: string; chars: number; lines: number };
-type ToastState = { message: string; kind: ToastKind } | null;
 
 function derive(doc: string): Derived {
   return { html: renderMarkdown(doc), chars: countChars(doc), lines: countLines(doc) };
@@ -81,7 +79,6 @@ export function EditorScreen() {
   const viewRef = useRef<EditorView | null>(null);
   const baselineRef = useRef<string>("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [derived, setDerived] = useState<Derived | null>(null);
   // 폴더·문서 저장소 (specs/004-folder-storage). 열린 대상이 바뀌면 편집기를 새로 만든다(M3 research R4).
   const workspace = useWorkspace();
@@ -93,7 +90,8 @@ export function EditorScreen() {
   const folderSelectRef = useRef<HTMLSelectElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const skipGuardRef = useRef(false);
-  const [toast, setToast] = useState<ToastState>(null);
+  // 저장·저장 실패·되돌림 알림 — 모달 대화상자, 자동으로 닫히지 않음 (007 FR-006, M1 FR-014 대체)
+  const [notice, setNotice] = useState<ConfirmRequest | null>(null);
   // 레이아웃 (specs/002-sidebar-layout). 첫 화면 CSS 변수는 layout.tsx 인라인 스크립트가 이미 적용했다.
   const sidebarRef = useRef<HTMLElement>(null);
   const splitRowRef = useRef<HTMLDivElement>(null);
@@ -112,7 +110,6 @@ export function EditorScreen() {
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
 
@@ -177,10 +174,13 @@ export function EditorScreen() {
     debounceRef.current = setTimeout(() => setDerived(derive(doc)), DEBOUNCE_MS);
   }, []);
 
-  const showToast = useCallback((message: string, kind: ToastKind) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ message, kind });
-    toastTimerRef.current = setTimeout(() => setToast(null), TOAST_MS);
+  // [확인] 1개. value "cancel"이라 ConfirmDialog가 열릴 때 이 버튼에 포커스를 두고 Esc·바깥 클릭도 같은 값으로 닫는다.
+  const showNotice = useCallback((message: string, kind: ToastKind) => {
+    setNotice({
+      title: kind === "success" ? strings.noticeDone : strings.noticeError,
+      message,
+      actions: [{ label: strings.noticeOk, kind: "primary", value: "cancel" }],
+    });
   }, []);
 
   const { route, navigate } = useHashRoute((next, prev) => void onHashChange(next, prev));
@@ -194,7 +194,7 @@ export function EditorScreen() {
     const content = view.state.doc.toString();
     const outcome = await saveForm(form, content);
     if (!outcome.ok) {
-      if (outcome.reason === "storage") showToast(strings.toastSaveFailed, "error");
+      if (outcome.reason === "storage") showNotice(strings.toastSaveFailed, "error");
       else if (outcome.reason === "noFolder") {
         setBarError({ field: "folder", message: strings.needFolder });
         folderSelectRef.current?.focus();
@@ -210,11 +210,11 @@ export function EditorScreen() {
     }
     setBarError(null);
     baselineRef.current = content;
-    showToast(outcome.renamedTo ? strings.renamedOnSave(outcome.renamedTo) : strings.toastSaved, "success");
+    showNotice(outcome.renamedTo ? strings.renamedOnSave(outcome.renamedTo) : strings.toastSaved, "success");
     // 초안이 문서가 되면 기록을 늘리지 않고 그 문서 주소로 바꾼다 (FR-013)
     if (outcome.createdId) navigate({ view: "doc", id: outcome.createdId }, { replace: true });
     return { ok: true };
-  }, [form, navigate, saveForm, showToast]);
+  }, [form, navigate, saveForm, showNotice]);
 
   // 문서 전환·새 문서·탭 닫기 전에 넘기는 편집기 상태 (M3 FR-010, M7 FR-002 — 본문·폴더·제목)
   const editorGuard = useMemo(
@@ -295,8 +295,8 @@ export function EditorScreen() {
     // 문서 바도 저장 시점으로 (M7 FR-002)
     setForm({ ...savedRef.current });
     setBarError(null);
-    showToast(strings[result.toast], result.kind);
-  }, [showToast]);
+    showNotice(strings[result.toast], result.kind);
+  }, [showNotice]);
 
   // 모든 화면 이동은 해시 변경 → 여기 1곳 (M6 research R2). 취소·저장 실패면 이전 주소로 되돌린다.
   // ponytail: 되돌릴 때 replaceState라 같은 문서 기록이 1개 더 남을 수 있다 — 앞으로 가기에서 같은 문서가 한 번 더 열리는 수준.
@@ -374,7 +374,11 @@ export function EditorScreen() {
         {strings.skipToContent}
       </button>
       <header className="flex flex-none items-center gap-3.5 border-b border-[var(--border)] px-[18px] py-[11px]">
-        <div className="mr-1 flex items-center gap-[9px]">
+        {/* 로고 = 대시보드 링크. 해시 이동이라 M6 저장 확인을 거친다 (007 FR-007) */}
+        <a
+          href={formatRoute({ view: "dashboard" })}
+          className="mr-1 flex items-center gap-[9px] rounded-md no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+        >
           <div
             className="flex h-[26px] w-[26px] items-center justify-center rounded-[7px] bg-[var(--accent)] text-[13px] font-extrabold text-white"
             aria-hidden="true"
@@ -382,7 +386,7 @@ export function EditorScreen() {
             M
           </div>
           <span className="text-[14.5px] font-bold tracking-[-0.01em] text-[#2a3346]">{strings.appName}</span>
-        </div>
+        </a>
         <nav className="ml-auto flex items-center gap-2" aria-label={strings.appName}>
           <button
             type="button"
@@ -511,7 +515,7 @@ export function EditorScreen() {
       </div>
       <InsertDialog request={dialog} onSubmit={submitDialog} onClose={closeDialog} />
       <ConfirmDialog request={workspace.confirm} onChoose={workspace.resolveConfirm} />
-      <Toast message={toast?.message ?? null} kind={toast?.kind ?? "success"} />
+      <ConfirmDialog request={notice} onChoose={() => setNotice(null)} />
     </div>
   );
 }

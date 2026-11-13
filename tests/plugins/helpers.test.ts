@@ -41,8 +41,17 @@ describe("wrapSelection", () => {
 });
 
 describe("toggleLinePrefix — 추가 (M2-b US1)", () => {
-  it("커서가 있는 줄 전체에 접두사를 붙이고 그 줄을 선택한다", () => {
-    expect(run((s) => toggleLinePrefix(s, "h2"), "ab|c")).toBe("[## abc]");
+  // 커서만 있으면 커서는 같은 글자 앞에 남는다 — 이어서 입력해도 접두가 지워지지 않음 (007 FR-001)
+  it("커서가 있는 줄에 접두사를 붙이고 커서는 같은 글자 앞에 둔다", () => {
+    expect(run((s) => toggleLinePrefix(s, "h2"), "ab|c")).toBe("## ab|c");
+  });
+
+  it("커서만 있을 때 해제하면 커서가 접두 길이만큼 당겨진다", () => {
+    expect(run((s) => toggleLinePrefix(s, "h2"), "## ab|c")).toBe("ab|c");
+  });
+
+  it("해제할 접두 안에 커서가 있으면 줄 맨 앞으로", () => {
+    expect(run((s) => toggleLinePrefix(s, "h2"), "#|# abc")).toBe("|abc");
   });
 
   it("선택이 걸친 모든 줄에 접두사를 붙인다", () => {
@@ -62,7 +71,7 @@ describe("toggleLinePrefix — 추가 (M2-b US1)", () => {
   });
 
   it("빈 줄 하나에 커서만 있어도 접두사를 붙인다", () => {
-    expect(run((s) => toggleLinePrefix(s, "task"), "|")).toBe("[- [ ] ]");
+    expect(run((s) => toggleLinePrefix(s, "task"), "|")).toBe("- [ ] |");
   });
 });
 
@@ -78,11 +87,11 @@ describe("insertBlock", () => {
 
 describe("insertAtSelectionEnd", () => {
   it("커서 위치에 삽입하고 커서를 삽입 끝에 둔다", () => {
-    expect(run((s) => insertAtSelectionEnd(s, "\\\n"), "foo|")).toBe("foo\\\n|");
+    expect(run((s) => insertAtSelectionEnd(s, "  \n"), "foo|")).toBe("foo  \n|");
   });
 
   it("선택 글자는 지우지 않고 선택 끝에 삽입한다", () => {
-    expect(run((s) => insertAtSelectionEnd(s, "\\\n"), "[foo]bar")).toBe("foo\\\n|bar");
+    expect(run((s) => insertAtSelectionEnd(s, "  \n"), "[foo]bar")).toBe("foo  \n|bar");
   });
 });
 

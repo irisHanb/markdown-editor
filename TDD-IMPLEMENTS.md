@@ -26,6 +26,9 @@
 | M7-dirty | 저장하지 않은 변경 판단 (FR-002) | `tests/lib/workspace/dirty.test.ts` | GREEN |
 | M7-names | 접근 가능한 이름·영역·건너뛰기 버튼 (FR-007, FR-009, FR-010, SC-003) | `tests/a11y/names.test.tsx` | GREEN |
 | M7-contrast | 색 대비 (FR-013, SC-005) | `tests/a11y/contrast.test.ts` | GREEN |
+| U1-edit-spot | 툴바 클릭 후 편집 위치 — 줄 접두 커서 유지·표 제목 선택·자동 링크 (007 FR-001–FR-003) | `tests/plugins/helpers.test.ts`, `tests/plugins/plugins.test.ts` | GREEN |
+| U1-hard-break | 강제 줄바꿈 공백 2개 방식·미리보기 (007 FR-004) | `tests/plugins/plugins.test.ts` | GREEN |
+| U1-shell | 로고 링크·토스트 제거 (007 FR-006·FR-007) | `tests/a11y/names.test.tsx` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -107,3 +110,13 @@
 | `npm test` | 20 files, 354 tests passed (M6까지 316 + M7 38), 실패 0건 |
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | 성공 (`Compiled successfully`) |
+- 2026-11-13 007 RED: 21 failed / 339 passed — 줄 접두 커서 위치 13건, 표 2건, 자동 링크 1건, 강제 줄바꿈 3건(삽입 2·미리보기 1), 로고 링크·토스트 2건
+- 2026-11-13 007 GREEN: 20 files, 360 tests passed. 토스트를 알림 모달(`ConfirmDialog` [확인] 1개)로 교체, `Toast.tsx`·`--toast-bg` 삭제
+
+## 품질 게이트 — 007 수동 검증 피드백 (2026-11-13)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 20 files, 360 tests passed, 실패 0건 |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 |

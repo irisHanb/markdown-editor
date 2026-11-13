@@ -77,7 +77,13 @@ export function toggleLinePrefix(state: EditorState, kind: LineKind): EditorChan
     lines[i] = remove ? body : def.prefix(++n) + body;
   }
   const block = lines.join("\n");
-  return { doc: doc.slice(0, start) + block + doc.slice(end), selectionStart: start, selectionEnd: start + block.length };
+  const next = doc.slice(0, start) + block + doc.slice(end);
+  // 커서만 있으면 같은 글자 앞에 남긴다 — 이어서 입력해도 접두가 지워지지 않는다 (007 FR-001)
+  if (s === e) {
+    const caret = Math.max(start, Math.min(start + block.length, s + block.length - (end - start)));
+    return { doc: next, selectionStart: caret, selectionEnd: caret };
+  }
+  return { doc: next, selectionStart: start, selectionEnd: start + block.length };
 }
 
 /** 커서 줄(선택이면 첫 비어있지 않은 줄)이 kind인가. */
