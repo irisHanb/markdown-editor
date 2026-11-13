@@ -19,10 +19,12 @@ M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰
 | M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼, 사이드바 트리·새 문서 | ✅ 구현 완료 (브라우저 수동 검증 잔여) |
 | M4 | 에디터/프리뷰 — CodeMirror 6 + unified 50:50, 실시간 렌더 | 🔶 M1에서 단일 문서분 완료 |
 | M5 | (M2로 통합, 2026-11-12) | — |
-| M6 | 문서 흐름 — 폴더 선택 저장, 파일 리스트, 네비게이션 | ⬜ 미착수 (← **다음 작업**) |
-| M7 | 마감 — sanitize·접근성·토스트·dirty check | 🔶 sanitize·알림 완료, dirty check 미착수 |
+| M6 | 문서 흐름 — 폴더 선택 저장, 파일 리스트, 네비게이션 | ✅ 구현 완료 (브라우저 수동 검증 잔여) |
+| M7 | 마감 — sanitize·접근성·토스트·dirty check | 🔶 sanitize·알림·화면 이동 저장 확인 완료, 탭 닫기·새로고침 경고와 접근성 점검 미착수 (← **다음 작업**) |
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
+**문서 주소**: 정적 export는 동적 경로를 만들 수 없어서 `docs/requirement.md` §2·§11의 `/editor/[docId]` 대신 해시 주소(`#/doc/<id>`·`#/new`·`#/dashboard`)를 쓴다(`src/lib/route/route.ts`, `specs/005-document-flow/research.md`).
+
+**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서) · `specs/005-document-flow` → M6(폴더 선택 저장·문서 옮기기, 대시보드, 문서 주소). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
 
 
 ## 핵심 아키텍처 원칙 (반드시 준수)
@@ -103,5 +105,5 @@ UI·HTML·SVG·슬라이드 생성 시 **`.claude/rules/anti-ai-slop.md` 강제*
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/004-folder-storage/plan.md` (M3 IndexedDB 폴더·문서 저장소, 사이드바 트리). M2는 `specs/002-sidebar-layout`·`specs/003-full-toolbar`(구현 완료).
+`specs/005-document-flow/plan.md` (M6 해시 주소 #/doc/<id>·초안 저장·문서 옮기기·대시보드). M3는 `specs/004-folder-storage`(구현 완료).
 <!-- SPECKIT END -->
