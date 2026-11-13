@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 프로젝트 상태 — 구현 진행 중
+## 프로젝트 상태 — M1–M7 구현 완료, 수동 검증·배포 잔여
 
-M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰(100ms 디바운스, sanitize) + 툴바 12버튼 + `localStorage` 저장·취소·알림. Vitest 8 files·110 tests 통과, `tsc --noEmit` 오류 0건, 정적 export 빌드 통과. 브라우저 수동 검증(`specs/001-single-screen-editor/quickstart.md` 2절)과 Vercel 배포는 미실행. SDD 산출물은 `specs/001-single-screen-editor` 하나뿐이다.
+`docs/requirement.md §12`의 마일스톤 7단계 구현을 마쳤다(2026-11-13). Vitest 20 files·354 tests 통과, `tsc --noEmit` 오류 0건, 정적 export 빌드 통과(기록: `TDD-IMPLEMENTS.md`). 남은 작업은 세 가지다 — 마일스톤별 브라우저 수동 검증(각 `specs/00N-*/quickstart.md` 2절, 한 번도 실행하지 않음), Vercel 배포(M1 T052, 사용자 결정 필요), 원격 푸시. 범위에서 뺀 항목: 모바일 화면(NFR-4), `.md` 내보내기(PRD C-5). SDD 산출물은 `specs/001`–`006` 6개다(아래 SDD 매핑).
 
 확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. 문서 데이터는 M3부터 IndexedDB(`idb` 8.0.4, `src/lib/workspace/`)에 저장하고 M1의 `localStorage["mdeditor:v1"]`은 첫 실행 시 옮긴 뒤 지운다(헌장 1.0.2 원칙 V). 레이아웃 설정만 `localStorage`. Zustand·`react-resizable-panels`는 쓰지 않는다.
 
@@ -15,7 +15,7 @@ M1(단일 화면) 구현 완료(2026-11-12): 스캐폴딩 + 에디터·프리뷰
 | 단계 | 범위 | 상태 |
 |------|------|------|
 | M1 | 스캐폴딩 + 단일 화면(에디터·프리뷰·툴바 12버튼·로컬 저장) | ✅ 구현 완료 (수동 검증·배포 잔여) |
-| M2 | **레이아웃(사이드바+컨텐츠 2분할, 리사이즈) + 툴바 완성(FR-5 전체: H1–H3·이미지·작업 목록·강제 줄바꿈·자동 링크·토글·대화상자·단축키)** | 🔶 M2-a·M2-b 구현 완료 (브라우저 수동 검증 잔여) |
+| M2 | **레이아웃(사이드바+컨텐츠 2분할, 리사이즈) + 툴바 완성(FR-5 전체: H1–H3·이미지·작업 목록·강제 줄바꿈·자동 링크·토글·대화상자·단축키)** | ✅ M2-a·M2-b 구현 완료 (브라우저 수동 검증 잔여) |
 | M3 | 저장소 — IndexedDB 스키마, 폴더 CRUD, `+` 버튼, 사이드바 트리·새 문서 | ✅ 구현 완료 (브라우저 수동 검증 잔여) |
 | M4 | 에디터/프리뷰 — CodeMirror 6 + unified 50:50, 실시간 렌더 | ✅ 구현 완료 (M1에서 구현, M6부터 문서별로 열림) |
 | M5 | (M2로 통합, 2026-11-12) | — |
