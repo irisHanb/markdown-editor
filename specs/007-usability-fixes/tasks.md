@@ -39,6 +39,20 @@
 - [X] T024 `npm install -E rehype-highlight@7.0.2`, `src/lib/markdown/pipeline.ts` — `rehypeRaw` 뒤·`rehypeSanitize` 앞에 `rehypeHighlight({ detect: true, subset: [...9개, css 제외] })`, 스키마 `code`·`span` 클래스 확장
 - [X] T025 `src/app/globals.css` — `.md-preview .hljs-*` 색(대비 4.5:1 이상), `.claude/rules/anti-ai-slop.md`에 헌장 VI 예외 1줄 → GREEN 기록, 게이트
 
+## Phase 2e: 새 문서 샘플 본문 (FR-011)
+
+- [X] T026 `tests/lib/workspace/draft.test.ts` — `createDraft(1, SAMPLE)`가 `{ kind: "draft", key: 1, title: UNTITLED, folderId: null, content: SAMPLE }`; 샘플 그대로면 `hasUnsavedChanges({ content: SAMPLE, baseline: draft.content, … isDraft: true })` false, 1글자 고치면 true. 실패 확인 → `U1-new-sample` RED
+- [X] T027 `src/lib/workspace/draft.ts` — `Draft` 타입(`content` 추가)·`createDraft`. `useWorkspace.ts`의 `Draft` 정의를 이 모듈로 옮기고 `openDraft`가 `createDraft(key, SAMPLE)` 사용, `createDocument`가 `repo.createDocument(folderId, title, SAMPLE)`
+- [X] T028 `src/components/editor/EditorScreen.tsx` — 편집기 초기값·baseline·프리뷰를 `current?.content ?? draft?.content ?? ""`로
+- [X] T029 게이트 → GREEN 기록
+
+## Phase 2f: 사이드바 줄 버튼 (FR-012, [⋯] 메뉴 제거)
+
+- [X] T030 (1차 — 메뉴 항목 아이콘) 7차 피드백으로 T032·T033이 대체
+- [X] T031 (1차 구현) 7차 피드백으로 T033이 대체
+- [X] T032 `tests/a11y/names.test.tsx` — `Sidebar` 서버 렌더에 `role="menu"`·`aria-haspopup` 없음; 폴더 줄마다 `aria-label="‘회의’ 새 문서"`·`‘회의’ 이름 바꾸기`·`‘회의’ 삭제` 버튼, 문서 줄마다 이름 바꾸기·삭제 버튼, 각 버튼에 `aria-hidden` svg 1개; 현재 줄(`currentId` 문서) 버튼만 `tabIndex` 0. 실패 확인 → `U1-menu-icons` RED
+- [X] T033 `src/components/layout/Sidebar.tsx` — `RowMenu`·`menuFor` 상태·ContextMenu/F10 키 처리 삭제, 줄 버튼 렌더(가시성 = 기존 [⋯] 규칙 + `group-focus-within`), treeitem 오른쪽 여백을 버튼 수에 맞춤 → GREEN 기록
+
 ## Phase 3: Polish
 
 - [X] T013 `specs/003-full-toolbar/spec.md` US1-4, `specs/001-single-screen-editor/spec.md` FR-014에 "007로 대체" 한 줄 주석
