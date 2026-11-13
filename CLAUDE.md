@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **문서 주소**: 정적 export는 동적 경로를 만들 수 없어서 `docs/requirement.md` §2·§11의 `/editor/[docId]` 대신 해시 주소(`#/doc/<id>`·`#/new`·`#/dashboard`)를 쓴다(`src/lib/route/route.ts`, `specs/005-document-flow/research.md`).
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서) · `specs/005-document-flow` → M6(폴더 선택 저장·문서 옮기기, 대시보드, 문서 주소) · `specs/006-polish-a11y` → M7(이탈 경고, 접근성). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
+**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서) · `specs/005-document-flow` → M6(폴더 선택 저장·문서 옮기기, 대시보드, 문서 주소) · `specs/006-polish-a11y` → M7(이탈 경고, 접근성) · `specs/007-usability-fixes` → 수동 검증 피드백(툴바 편집 위치, 강제 줄바꿈 공백 방식, 알림 모달, 로고 → 대시보드). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
 
 
 ## 핵심 아키텍처 원칙 (반드시 준수)
