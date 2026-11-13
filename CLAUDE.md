@@ -47,7 +47,7 @@ export interface MarkdownPlugin {
 ### 2. 마크다운 파이프라인 — sanitize 필수
 
 ```
-입력(md) → remark-parse → remark-gfm → remark-rehype → rehype-sanitize → rehype-stringify → 프리뷰 DOM
+입력(md) → remark-parse → remark-gfm → remark-rehype → rehype-raw → rehype-highlight → rehype-sanitize → rehype-stringify → 프리뷰 DOM
 ```
 
 `rehype-sanitize`는 **생략 불가**(XSS 방어, NFR-1). 사용자가 원시 HTML을 입력할 수 있으므로 프리뷰 렌더 전 정제는 보안 요구사항이다.
@@ -78,6 +78,8 @@ python3 -m http.server 3000 -d out   # 빌드 결과를 서버 없이 확인
 ```
 
 TDD 진행 기록은 루트 `TDD-IMPLEMENTS.md`.
+
+**디버깅 — react-grab 0.2.0(개발 의존성)**: `npm run dev`일 때만 `src/instrumentation-client.ts`가 불러온다. 화면 요소에 마우스를 올리고 ⌘C(Ctrl+C)를 누르면 요소와 컴포넌트 스택·소스 위치(`파일:줄:열`)가 복사된다. production 빌드(`out/`)에는 포함되지 않는다.
 
 ## 디자인 레퍼런스
 

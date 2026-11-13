@@ -18,9 +18,13 @@ remark-parse
 → remark-gfm
 → remark-rehype   { allowDangerousHtml: true }
 → rehype-raw
-→ rehype-sanitize defaultSchema
+→ rehype-highlight { detect: true, subset: 9개 }   ← 2026-11-13 추가 (헌장 1.1.0, specs/007-usability-fixes FR-010)
+→ rehype-sanitize defaultSchema + code·span의 hljs, hljs-* 클래스
 → rehype-stringify
 ```
+
+conformance 비교는 하이라이트가 더한 `span`·`hljs` 클래스(그리고 기대값에 없는 자동 판별 `language-*`)를 지운 뒤
+수행합니다(정규화 5번, `tests/markdown/conformance.test.ts`).
 
 ## 출력 보장
 

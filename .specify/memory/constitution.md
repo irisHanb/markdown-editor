@@ -19,9 +19,12 @@
 ### II. 안전한 렌더링 (NON-NEGOTIABLE)
 
 - 프리뷰 파이프라인은 `remark-parse → remark-gfm → remark-rehype → rehype-raw →
-  rehype-sanitize → rehype-stringify` 순서를 따라야 합니다(MUST).
+  rehype-highlight → rehype-sanitize → rehype-stringify` 순서를 따라야 합니다(MUST).
 - `rehype-raw`는 원시 HTML을 요소로 파싱하는 단계이며 반드시 `rehype-sanitize` 앞에 둡니다.
   sanitize 뒤에 HTML을 만드는 단계를 두어서는 안 됩니다(MUST NOT).
+- `rehype-highlight`는 코드 블록 글자에 `span`과 클래스만 더하는 단계이며 `rehype-sanitize`
+  앞에 둡니다(MUST). sanitize 스키마는 `code`·`span`의 `hljs`, `hljs-*` 클래스만 추가로
+  허용합니다.
 - `rehype-sanitize`는 어떤 경로에서도 생략·우회해서는 안 됩니다(MUST NOT).
   `dangerouslySetInnerHTML`에는 sanitize를 거친 HTML만 넣습니다.
 - sanitize 스키마를 완화하는 변경은 XSS 회귀 테스트를 함께 추가해야 합니다(MUST).
@@ -30,7 +33,9 @@
 
 ### III. 명세 정확성
 
-- 프리뷰 출력은 CommonMark 0.31.2 공식 출력과 일치해야 합니다(MUST).
+- 프리뷰 출력은 CommonMark 0.31.2 공식 출력과 일치해야 합니다(MUST). 코드 하이라이트가 더한
+  `span`·`hljs`/`hljs-*` 클래스는 conformance 비교 전에 제거하며, 제거한 결과의 글자·구조는
+  공식 출력과 같아야 합니다(MUST).
 - 표·취소선·작업목록·자동링크 리터럴은 GFM 확장으로 분류해야 하며, 코드·문서·테스트에서
   CommonMark 코어와 섞어 표기해서는 안 됩니다(MUST NOT).
 - 렌더 기대값은 `docs/markdown-editor-spec.md`의 `HTML 결과물`을 출처로 삼아야 합니다(MUST).
@@ -67,6 +72,9 @@
 
 - UI·HTML·SVG 생성물은 `.claude/rules/anti-ai-slop.md`를 따라야 합니다(MUST). 그라데이션,
   컬러 그림자, 장식 모션, 배경 장식을 쓰지 않습니다.
+- 예외: 프리뷰 코드 블록의 문법 강조 색은 "무채색 + 액센트 1색" 규칙에서 제외해 여러 색을 쓸 수
+  있습니다. 이 색도 코드 배경 대비 4.5:1 이상이어야 하며, 그라데이션·글로우는 여전히 금지합니다
+  (MUST).
 - 시각 기준은 `docs/design/project/Markdown Editor.dc.html`입니다. 시각만 맞추고 프로토타입의
   내부 구조(`<textarea>`, 정규식 렌더러)는 복제하지 않습니다.
 - 툴바 버튼은 전부 한글 `aria-label`(= 플러그인 `label`)을 갖고 키보드로 포커스할 수
@@ -119,4 +127,4 @@
   확인합니다. 정당화되지 않은 위반은 구현 전에 해소해야 합니다(MUST).
 - 런타임 개발 지침은 `CLAUDE.md`를 따릅니다.
 
-**Version**: 1.0.2 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-12
+**Version**: 1.1.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13

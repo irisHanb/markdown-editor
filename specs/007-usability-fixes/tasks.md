@@ -20,6 +20,25 @@
 - [X] T011 `src/components/editor/EditorScreen.tsx` 헤더 — 로고 묶음을 `<a href={formatRoute({ view: "dashboard" })}>`로, 포커스 테두리 클래스 포함 (FR-007)
 - [X] T012 `npm test`·`npx tsc --noEmit`·`npm run build` 통과 → GREEN 기록
 
+## Phase 2b: 코드 블록 아이콘 (FR-008)
+
+- [X] T016 `tests/plugins/plugins.test.ts` — `code-block` 아이콘이 `SquareTerminal`이고 `inline-code` 아이콘과 다름. 실패 확인 → RED 기록
+- [X] T017 `src/plugins/code-block.ts` 아이콘을 `SquareTerminal`로, `docs/requirement.md` FR-5 표 아이콘 이름 갱신 → GREEN 기록
+
+## Phase 2c: 코드 블록 아이콘·위치 재수정 (FR-008·FR-009)
+
+- [X] T018 `tests/plugins/plugins.test.ts` — 아이콘 기대값 `Braces`, `ORDER`에서 `code-block`을 `inline-code` 뒤로, 묶음 길이 `[3, 5, 3, 4, 3]`. 실패 확인 → RED 기록
+- [X] T019 `src/plugins/code-block.ts` 아이콘 `Braces`, `src/plugins/index.ts` 묶음 배치 변경, `docs/requirement.md`·`docs/markdown-editor-spec.md` 아이콘 이름 갱신 → GREEN 기록
+
+## Phase 2d: 코드 블록 하이라이트 (FR-010, 헌장 1.1.0)
+
+- [X] T020 `tests/markdown/highlight.test.ts` — ```` ```js ```` → `<code class="hljs language-js">`와 `<span class="hljs-keyword">const</span>`; 언어 없는 JS 블록 자동 강조; 인라인 코드 강조 없음; XSS — `<span class="hljs-x" onclick="alert(1)">`의 `onclick` 제거·클래스 유지, `<span class="evil">` 클래스 제거, `<code class="hljs language-js" style="…">`의 `style` 제거, `<pre><code class="language-js"><img src=x onerror=alert(1)></code></pre>`에 `onerror` 없음; 코드 블록 위주 1만 자 렌더 중앙값 ≤ 50ms
+- [X] T021 `tests/markdown/conformance.test.ts` 정규화 5번 — 하이라이트 `span` 태그·`hljs` 클래스 제거, 기대값에 클래스 없는 `<code>`면 자동 판별 `language-*`도 제거 (헌장 III)
+- [X] T022 `tests/a11y/contrast.test.ts` — `globals.css`의 `.md-preview .hljs-*` 색이 `#1a2030` 대비 ≥ 4.5
+- [X] T023 실패 확인 → `U1-highlight` RED 기록
+- [X] T024 `npm install -E rehype-highlight@7.0.2`, `src/lib/markdown/pipeline.ts` — `rehypeRaw` 뒤·`rehypeSanitize` 앞에 `rehypeHighlight({ detect: true, subset: [...9개, css 제외] })`, 스키마 `code`·`span` 클래스 확장
+- [X] T025 `src/app/globals.css` — `.md-preview .hljs-*` 색(대비 4.5:1 이상), `.claude/rules/anti-ai-slop.md`에 헌장 VI 예외 1줄 → GREEN 기록, 게이트
+
 ## Phase 3: Polish
 
 - [X] T013 `specs/003-full-toolbar/spec.md` US1-4, `specs/001-single-screen-editor/spec.md` FR-014에 "007로 대체" 한 줄 주석

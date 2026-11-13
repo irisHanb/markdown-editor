@@ -28,7 +28,7 @@
 | 9   | 목록   | `Ordered list`    | ListOrdered   | `1. ` (줄마다 증가)                                                                                   | 줄 접두     | `prefixLines((n)=>n+'. ')`         |
 | 10  | 목록   | `Task list`       | ListChecks    | `- [ ] `                                                                                              | 줄 접두     | `prefixLines`                      |
 | 11  | 블록   | `Blockquote`      | Quote         | `> `                                                                                                  | 줄 접두     | `prefixLines`                      |
-| 12  | 블록   | `Code block`      | SquareCode    | ` ```\nyour code here\n``` `                                                                          | 블록 삽입   | `insertBlock('```','```')`         |
+| 12  | 블록   | `Code block`      | SquareCode     | ` ```\nyour code here\n``` `                                                                          | 블록 삽입   | `insertBlock('```','```')`         |
 | 13  | 블록   | `Horizontal rule` | Minus         | `\n---\n`                                                                                             | 텍스트 삽입 | `insertText`                       |
 | 14  | 삽입   | `Link`            | Link          | `[link text](https://)`                                                                               | 선택 감싸기 | `wrapSelection('[','](https://)')` |
 | 15  | 삽입   | `Image (URL)`     | Image         | `![alt text](https://)`                                                                               | 텍스트 삽입 | `insertText`                       |
