@@ -31,6 +31,8 @@
 | U1-shell | 로고 링크·토스트 제거 (007 FR-006·FR-007) | `tests/a11y/names.test.tsx` | GREEN |
 | U1-codeblock-icon | 코드 블록 아이콘 박스 안 `<>`(`SquareCode`)·인라인 코드 옆 배치 (007 FR-008·FR-009) | `tests/plugins/plugins.test.ts` | GREEN |
 | U1-highlight | 코드 블록 문법 강조·허용 목록 XSS 회귀·성능·색 대비 (007 FR-010, 헌장 1.1.0) | `tests/markdown/highlight.test.ts`, `tests/markdown/conformance.test.ts`, `tests/a11y/contrast.test.ts` | GREEN |
+| U1-new-sample | 새 문서 샘플 본문·초안 기준값 (007 FR-011) | `tests/lib/workspace/draft.test.ts` | GREEN |
+| U1-menu-icons | 사이드바 [⋯] 메뉴 제거, 줄마다 아이콘 버튼 (007 FR-012) | `tests/a11y/names.test.tsx` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -135,3 +137,7 @@
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | 성공 |
 - 2026-11-13 U1-codeblock-icon 3차 RED: `expected [Function Braces] to be [Function SquareCode]` → GREEN: 사용자 지정 `SquareCode`
+- 2026-11-13 U1-new-sample RED: `Cannot find package '@/lib/workspace/draft'` → GREEN: 22 files, 383 tests passed. 상단·사이드바 [새 문서] 모두 `SAMPLE` 본문, 초안 baseline = 샘플
+- 2026-11-13 U1-menu-icons RED: `Element type is invalid … got: undefined`(RowMenu 미export) → GREEN: 새 문서 `FilePlus`·이름 바꾸기 `Pencil`·삭제 `Trash2`
+- 2026-11-13 U1-menu-icons 2차 RED: 12 failed(`aria-haspopup` 있음, 줄 버튼 없음) → GREEN: `RowMenu`·`menuFor`·ContextMenu/Shift+F10 처리 삭제, 폴더 줄 [새 문서·이름 바꾸기·삭제], 문서 줄 [이름 바꾸기·삭제]
+- 2026-11-13 U1-menu-icons 3차 RED: `invisible` 클래스 있음 1건 → GREEN: 줄 버튼 항상 표시

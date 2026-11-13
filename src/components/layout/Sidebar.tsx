@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, FileText, FolderPlus, MoreHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, FilePlus, FileText, FolderPlus, type LucideIcon, Pencil, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
 import { strings } from "@/content/strings";
 import { type NameCheck, nextUntitled, validateName } from "@/lib/workspace/names";
@@ -91,62 +91,10 @@ function NameInput(props: {
   );
 }
 
-/** [⋯] 메뉴 — ↑↓ 이동, Enter 실행, Esc 닫기 (contracts/ui.md) */
-function RowMenu(props: { label: string; items: { label: string; run: () => void }[]; onClose: () => void }) {
-  const ref = useRef<HTMLUListElement>(null);
-  const onCloseRef = useRef(props.onClose);
-  onCloseRef.current = props.onClose;
-  // 열릴 때 1회만 첫 항목에 포커스 (부모 렌더마다 다시 포커스하지 않음)
-  useEffect(() => {
-    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    const outside = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && onCloseRef.current();
-    document.addEventListener("mousedown", outside);
-    return () => document.removeEventListener("mousedown", outside);
-  }, []);
-
-  const onKeyDown = (e: KeyboardEvent) => {
-    e.stopPropagation();
-    const buttons = [...(ref.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
-    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    if (e.key === "ArrowDown") buttons[(i + 1) % buttons.length]?.focus();
-    else if (e.key === "ArrowUp") buttons[(i - 1 + buttons.length) % buttons.length]?.focus();
-    else if (e.key === "Escape") props.onClose();
-    else return;
-    e.preventDefault();
-  };
-
-  return (
-    <ul
-      ref={ref}
-      role="menu"
-      aria-label={props.label}
-      onKeyDown={onKeyDown}
-      className="absolute top-full right-1 z-20 m-0 min-w-[130px] list-none rounded-md border border-[var(--border)] bg-white p-1"
-    >
-      {props.items.map((item) => (
-        <li key={item.label} role="none">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              props.onClose();
-              item.run();
-            }}
-            className={`block w-full cursor-pointer rounded px-2.5 py-1.5 text-left text-[13px] text-[var(--fg)] hover:bg-[#f1f3f9] focus:bg-[#f1f3f9] ${focusRing}`}
-          >
-            {item.label}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 // 폴더 > 문서 트리 (specs/004-folder-storage contracts/ui.md, WAI-ARIA Tree View 패턴).
 export function Sidebar(props: Props) {
   const { folders, docs, currentId } = props;
   const [editing, setEditing] = useState<Editing>(null);
-  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const treeRef = useRef<HTMLUListElement>(null);
 
@@ -221,13 +169,6 @@ export function Sidebar(props: Props) {
       case "Delete":
         void removeItem(it);
         break;
-      case "ContextMenu":
-        setMenuFor(keyOf(it));
-        break;
-      case "F10":
-        if (!e.shiftKey) return;
-        setMenuFor(keyOf(it));
-        break;
       default:
         return;
     }
@@ -291,16 +232,17 @@ export function Sidebar(props: Props) {
             );
           }
           const selected = it.kind === "doc" && it.id === currentId;
-          const menuItems =
+          // 줄 버튼 — [⋯] 메뉴 대신 줄에 바로 나열 (007 FR-012). 이름은 항목 이름을 붙여 줄끼리 구별한다.
+          const actions: { label: string; icon: LucideIcon; run: () => void }[] =
             it.kind === "folder"
               ? [
-                  { label: strings.newDocument, run: () => setEditing({ mode: "newDoc", folderId: it.id }) },
-                  { label: strings.rename, run: () => setEditing({ mode: "rename", kind: it.kind, id: it.id }) },
-                  { label: strings.delete, run: () => void removeItem(it) },
+                  { label: strings.newDocument, icon: FilePlus, run: () => setEditing({ mode: "newDoc", folderId: it.id }) },
+                  { label: strings.rename, icon: Pencil, run: () => setEditing({ mode: "rename", kind: it.kind, id: it.id }) },
+                  { label: strings.delete, icon: Trash2, run: () => void removeItem(it) },
                 ]
               : [
-                  { label: strings.rename, run: () => setEditing({ mode: "rename", kind: it.kind, id: it.id }) },
-                  { label: strings.delete, run: () => void removeItem(it) },
+                  { label: strings.rename, icon: Pencil, run: () => setEditing({ mode: "rename", kind: it.kind, id: it.id }) },
+                  { label: strings.delete, icon: Trash2, run: () => void removeItem(it) },
                 ];
           const showNewDoc = editing?.mode === "newDoc" && editing.folderId === it.id && it.kind === "folder";
           const lastDocOfFolder = it.kind === "doc" && items[items.indexOf(it) + 1]?.folderId !== it.folderId;
@@ -320,7 +262,9 @@ export function Sidebar(props: Props) {
                     activate(it);
                   }}
                   style={{ paddingLeft: indent }}
-                  className={`flex h-[30px] min-w-0 flex-1 cursor-pointer items-center gap-1.5 pr-8 text-[13px] ${focusRing} ${
+                  className={`flex h-[30px] min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-[13px] ${
+                    it.kind === "folder" ? "pr-[84px]" : "pr-[58px]"
+                  } ${focusRing} ${
                     selected ? "bg-[#e8edfb] font-semibold text-[var(--accent)]" : "text-[var(--fg)] hover:bg-[#f1f3f9]"
                   }`}
                 >
@@ -335,29 +279,22 @@ export function Sidebar(props: Props) {
                   )}
                   <span className="truncate">{it.name}</span>
                 </div>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-haspopup="menu"
-                  aria-expanded={menuFor === key}
-                  aria-label={`‘${it.name}’ 메뉴`}
-                  onClick={() => setMenuFor(menuFor === key ? null : key)}
-                  className={`absolute right-1 inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[#4a5568] hover:bg-[#e3e8f0] ${
-                    menuFor === key || key === focusKey ? "visible" : "invisible group-hover:visible"
-                  } ${focusRing}`}
-                >
-                  <MoreHorizontal size={14} aria-hidden="true" />
-                </button>
-                {menuFor === key && (
-                  <RowMenu
-                    label={`‘${it.name}’ 메뉴`}
-                    items={menuItems}
-                    onClose={() => {
-                      setMenuFor(null);
-                      focusItem(key);
-                    }}
-                  />
-                )}
+                {/* 항상 보인다 (007 FR-012 8차 피드백). 포커스 줄의 버튼만 Tab 순서에 넣는다(트리는 로빙 tabIndex). */}
+                <div className="absolute right-1 flex items-center gap-0.5">
+                  {actions.map((a) => (
+                    <button
+                      key={a.label}
+                      type="button"
+                      tabIndex={key === activeKey ? 0 : -1}
+                      aria-label={`‘${it.name}’ ${a.label}`}
+                      title={a.label}
+                      onClick={a.run}
+                      className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[#4a5568] hover:bg-[#e3e8f0] ${focusRing}`}
+                    >
+                      <a.icon size={14} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
               </div>
               {showNewDoc &&
                 !items.some((x) => x.level === 2 && x.folderId === it.id) &&

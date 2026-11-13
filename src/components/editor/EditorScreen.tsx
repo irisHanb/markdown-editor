@@ -117,8 +117,10 @@ export function EditorScreen() {
   const currentId = current?.id ?? null;
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    baselineRef.current = current?.content ?? "";
-    setDerived(editorKey ? derive(current?.content ?? "") : null);
+    // 초안은 샘플 본문이 기준값 — 고치지 않은 샘플은 저장하지 않은 변경이 아니다 (007 FR-011)
+    const initial = current?.content ?? workspace.draft?.content ?? "";
+    baselineRef.current = initial;
+    setDerived(editorKey ? derive(initial) : null);
     setActiveIds(new Set());
     setBarError(null);
   }, [editorKey]);
@@ -474,7 +476,7 @@ export function EditorScreen() {
               {editorKey ? (
                 <MarkdownEditor
                   key={editorKey}
-                  initialDoc={current?.content ?? ""}
+                  initialDoc={current?.content ?? workspace.draft?.content ?? ""}
                   onChange={handleChange}
                   onSelection={handleSelection}
                   bindings={bindings}

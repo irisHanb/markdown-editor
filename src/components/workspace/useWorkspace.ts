@@ -5,11 +5,12 @@ import { SAMPLE } from "@/content/sample";
 import { strings } from "@/content/strings";
 import type { Route } from "@/lib/route/route";
 import { bootstrap } from "@/lib/workspace/bootstrap";
+import { createDraft, type Draft } from "@/lib/workspace/draft";
 import { createIdbRepository } from "@/lib/workspace/idb-repository";
 import { createMemoryRepository } from "@/lib/workspace/memory-repository";
 import { byName, pickNextDocument } from "@/lib/workspace/names";
 import type { Doc, Folder, Repository } from "@/lib/workspace/repository";
-import { type DocumentForm, planSave, type SavePlan, UNTITLED } from "@/lib/workspace/save-plan";
+import { type DocumentForm, planSave, type SavePlan } from "@/lib/workspace/save-plan";
 import { planSwitch, runSwitch, type SwitchChoice } from "@/lib/workspace/switch";
 
 export type ConfirmAction = { label: string; kind: "primary" | "danger" | "default"; value: string };
@@ -19,7 +20,7 @@ export type ConfirmRequest = { title: string; message: string; actions: ConfirmA
 export type EditorGuard = { isDirty: () => boolean; saveCurrent: () => Promise<{ ok: boolean }> };
 
 /** 저장 전 새 문서 (specs/005-document-flow data-model.md) */
-export type Draft = { kind: "draft"; key: number; title: string; folderId: string | null };
+export type { Draft } from "@/lib/workspace/draft";
 
 export type View = "loading" | "doc" | "new" | "dashboard" | "notFound";
 
@@ -79,7 +80,7 @@ export function useWorkspace() {
   const openDraft = useCallback(() => {
     const key = ++draftSeq.current;
     setCurrent(null);
-    setDraft({ kind: "draft", key, title: UNTITLED, folderId: null });
+    setDraft(createDraft(key, SAMPLE)); // 새 문서는 샘플 본문으로 시작 (007 FR-011)
     setView("new");
     setEditorKey(`draft-${key}`);
   }, []);
@@ -248,7 +249,7 @@ export function useWorkspace() {
       if (!repo) return null;
       const f = folders.find((x) => x.id === folderId);
       if (f?.collapsed) await repo.setCollapsed(folderId, false);
-      const d = await repo.createDocument(folderId, title);
+      const d = await repo.createDocument(folderId, title, SAMPLE); // 사이드바 새 문서도 샘플 본문 (007 FR-011)
       await refresh();
       return d.id;
     },

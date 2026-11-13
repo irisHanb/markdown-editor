@@ -153,3 +153,50 @@ describe("앱 골격 — 로고 링크·알림", () => {
     expect(editorScreen()).not.toContain('role="status"');
   });
 });
+
+// 007 FR-012 — [⋯] 메뉴 없이 줄마다 기능 버튼(아이콘 + 항목 이름을 붙인 aria-label)
+describe("사이드바 줄 버튼", () => {
+  const html = renderToStaticMarkup(
+    <Sidebar
+      ref={createRef()}
+      folders={folders}
+      docs={docs}
+      currentId="d1"
+      onCreateFolder={async () => {}}
+      onToggleFolder={noop}
+      onOpenDocument={noop}
+      onCreateDocument={noop}
+      onRename={async () => {}}
+      onDelete={async () => true}
+    />,
+  );
+  const button = (label: string) => html.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>([\\s\\S]*?)</button>`));
+
+  it("드롭다운 메뉴 없음", () => {
+    expect(html).not.toContain('role="menu"');
+    expect(html).not.toContain("aria-haspopup");
+  });
+
+  it.each([
+    "‘회의’ 새 문서", "‘회의’ 이름 바꾸기", "‘회의’ 삭제",
+    "‘메모’ 새 문서", "‘메모’ 이름 바꾸기", "‘메모’ 삭제",
+    "‘주간 회의’ 이름 바꾸기", "‘주간 회의’ 삭제", "‘할 일’ 이름 바꾸기", "‘할 일’ 삭제",
+  ])("%s 버튼 + aria-hidden 아이콘 1개", (label) => {
+    const m = button(label);
+    expect(m).not.toBeNull();
+    expect(m![1].match(/<svg[^>]*aria-hidden="true"/g)).toHaveLength(1);
+  });
+
+  it("줄 버튼은 항상 보임 — hover·포커스 때만 보이는 클래스 없음", () => {
+    expect(html).not.toMatch(/\binvisible\b/);
+  });
+
+  it("문서 줄에는 새 문서 버튼 없음", () => {
+    expect(button("‘주간 회의’ 새 문서")).toBeNull();
+  });
+
+  it("현재 줄(열린 문서) 버튼만 Tab 순서에 있음", () => {
+    expect(button("‘주간 회의’ 삭제")![0]).not.toContain('tabindex="-1"');
+    expect(button("‘할 일’ 삭제")![0]).toContain('tabindex="-1"');
+  });
+});
