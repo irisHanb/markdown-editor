@@ -15,8 +15,9 @@ type Props = {
 const focusRing = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
 
 export function StatusBar({ path, disabled = false, charCount, lineCount, onCancel, onSave }: Props) {
+  // <main> 안의 footer는 contentinfo가 아니고 이름을 붙일 수 없어 이름 있는 section (M7 research R7)
   return (
-    <footer className="flex flex-none items-center justify-between border-t border-[var(--border)] bg-white px-5 py-[13px]">
+    <section aria-label={strings.statusBarLabel} className="flex flex-none items-center justify-between border-t border-[var(--border)] bg-white px-5 py-[13px]">
       <div className="flex min-w-0 items-center gap-4 text-[12.5px] text-[var(--fg-muted)]">
         {path && (
           <>
@@ -49,6 +50,6 @@ export function StatusBar({ path, disabled = false, charCount, lineCount, onCanc
           {strings.save}
         </button>
       </div>
-    </footer>
+    </section>
   );
 }

@@ -8,6 +8,8 @@
   --fg-muted: #6b7385;
   --border: #eaedf3;
   --border-soft: #eef1f6;
+  /* 입력 칸 경계 — 흰 배경 대비 3.06:1 (WCAG 1.4.11, M7 research R8) */
+  --input-border: #8a94a6;
   --editor-bg: #fbfcfe;
   --toast-bg: #1c2434;
   --sidebar-w: 260px;
@@ -48,7 +50,7 @@ body {
 .md-preview ul { list-style: disc; }
 .md-preview ol { list-style: decimal; }
 .md-preview li { margin: 5px 0; }
-.md-preview li::marker { color: #8a93a6; }
+.md-preview li::marker { color: var(--fg-muted); } /* 번호도 글자 — 4.76:1 (M7 research R8) */
 .md-preview blockquote { margin: 0 0 18px; padding: 12px 18px; background: #f5f7ff; border-left: 3px solid var(--accent); border-radius: 0; color: #4a5878; font-size: 14.5px; }
 .md-preview blockquote p:last-child { margin: 0; }
 .md-preview hr { border: 0; border-top: 1px solid #e8ecf3; margin: 30px 0; }

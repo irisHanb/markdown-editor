@@ -69,7 +69,7 @@ export function InsertDialog({ request, onSubmit, onClose }: Props) {
             <input
               value={first}
               onChange={(e) => setFirst(e.target.value)}
-              className="h-9 rounded-md border border-[#dfe4ec] px-2.5 text-sm text-[var(--fg)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+              className="h-9 rounded-md border border-[var(--input-border)] px-2.5 text-sm text-[var(--fg)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
             />
           </label>
           <label className="flex flex-col gap-1 text-[12.5px] text-[var(--fg-muted)]">
@@ -79,7 +79,7 @@ export function InsertDialog({ request, onSubmit, onClose }: Props) {
               value={url}
               inputMode="url"
               onChange={(e) => setUrl(e.target.value)}
-              className="h-9 rounded-md border border-[#dfe4ec] px-2.5 font-[family-name:var(--font-mono)] text-[13px] text-[var(--fg)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+              className="h-9 rounded-md border border-[var(--input-border)] px-2.5 font-[family-name:var(--font-mono)] text-[13px] text-[var(--fg)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
             />
           </label>
           <div className="mt-1 flex justify-end gap-2">

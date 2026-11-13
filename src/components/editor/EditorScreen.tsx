@@ -14,6 +14,7 @@ import { DEFAULT_LAYOUT, EDITOR, type Layout, loadLayout, SIDEBAR, saveLayout } 
 import { renderMarkdown } from "@/lib/markdown/pipeline";
 import { formatRoute, type Route } from "@/lib/route/route";
 import { countChars, countLines } from "@/lib/text/count";
+import { hasUnsavedChanges } from "@/lib/workspace/dirty";
 import type { DocumentForm } from "@/lib/workspace/save-plan";
 import { plugins } from "@/plugins";
 import { formatShortcut } from "@/plugins/shortcut";
@@ -123,9 +124,35 @@ export function EditorScreen() {
     setDerived(editorKey ? derive(current?.content ?? "") : null);
     setActiveIds(new Set());
     setBarError(null);
-    // 새 문서는 편집 영역에 커서를 둔다 (US1-1)
-    if (screen === "new") requestAnimationFrame(() => viewRef.current?.focus());
   }, [editorKey]);
+
+  // 화면의 시작점으로 포커스 — 편집기 / 대시보드 제목 / 없는 문서 안내 (M7 FR-005, FR-007, research R5)
+  const dashboardHeadingRef = useRef<HTMLHeadingElement>(null);
+  const notFoundRef = useRef<HTMLParagraphElement>(null);
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+  const focusMain = useCallback(() => {
+    const s = screenRef.current;
+    if (s === "doc" || s === "new") viewRef.current?.focus();
+    else if (s === "dashboard") dashboardHeadingRef.current?.focus();
+    else if (s === "notFound") notFoundRef.current?.focus();
+  }, []);
+
+  // 앱 안 이동(hashchange)의 목표 화면이 그려진 뒤에만 옮긴다. 앱 시작 시에는 건너뛰기 버튼이 첫 Tab을 받도록 그대로 둔다.
+  // openDoc은 상태를 바꾼 뒤에도 await가 남아 있어, "이동 완료" 시점이 아니라 목표 화면 도달로 판정한다.
+  // 편집기는 자식 효과에서 만들어지므로 이 효과(부모) 시점에는 viewRef가 채워져 있다.
+  const focusTargetRef = useRef<Route | null>(null);
+  useEffect(() => {
+    const t = focusTargetRef.current;
+    if (!t) return;
+    const reached =
+      t.view === "doc"
+        ? (screen === "doc" && editorKey === t.id) || screen === "notFound"
+        : t.view === "home" || screen === t.view;
+    if (!reached) return;
+    focusTargetRef.current = null;
+    requestAnimationFrame(focusMain);
+  }, [screen, editorKey, focusMain]);
 
   // 문서 바 값 = 열린 대상의 폴더·제목 (이름 바꾸기·옮기기 후에도 맞춘다)
   const draft = workspace.draft;
@@ -133,6 +160,17 @@ export function EditorScreen() {
     if (current) setForm({ folderId: current.folderId, title: current.title });
     else if (draft) setForm({ folderId: draft.folderId, title: draft.title });
   }, [editorKey, current?.folderId, current?.title, draft]);
+
+  // 저장하지 않은 변경의 기준값 — 문서는 저장 시점, 초안은 초안을 연 시점 폴더·제목 (M7 FR-002, data-model.md)
+  const saved = current
+    ? { folderId: current.folderId, title: current.title }
+    : { folderId: draft?.folderId ?? null, title: draft?.title ?? "" };
+  const formRef = useRef(form);
+  formRef.current = form;
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  const isDraftRef = useRef(false);
+  isDraftRef.current = screen === "new";
 
   const handleChange = useCallback((doc: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -178,14 +216,36 @@ export function EditorScreen() {
     return { ok: true };
   }, [form, navigate, saveForm, showToast]);
 
-  // 문서 전환·새 문서 전에 넘기는 편집기 상태 (FR-010)
+  // 문서 전환·새 문서·탭 닫기 전에 넘기는 편집기 상태 (M3 FR-010, M7 FR-002 — 본문·폴더·제목)
   const editorGuard = useMemo(
     () => ({
-      isDirty: () => (viewRef.current ? viewRef.current.state.doc.toString() !== baselineRef.current : false),
+      isDirty: () =>
+        viewRef.current
+          ? hasUnsavedChanges({
+              content: viewRef.current.state.doc.toString(),
+              baseline: baselineRef.current,
+              form: formRef.current,
+              saved: savedRef.current,
+              isDraft: isDraftRef.current,
+            })
+          : false,
       saveCurrent: handleSave,
     }),
     [handleSave],
   );
+
+  // 탭 닫기·새로고침·외부 주소 이동 경고 (M7 FR-001, research R1). 해시 변경은 beforeunload를 일으키지 않는다(FR-003).
+  const guardRef = useRef(editorGuard);
+  guardRef.current = editorGuard;
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!guardRef.current.isDirty()) return;
+      e.preventDefault();
+      e.returnValue = ""; // 구형 Chrome·Safari 호환
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
 
   // 툴바 클릭·단축키가 같은 경로를 쓴다 (specs/003-full-toolbar plan "주요 흐름").
   const runPlugin = useCallback((plugin: MarkdownPlugin) => {
@@ -232,6 +292,9 @@ export function EditorScreen() {
     if (!view) return;
     const result = revert(baselineRef.current);
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: result.doc } });
+    // 문서 바도 저장 시점으로 (M7 FR-002)
+    setForm({ ...savedRef.current });
+    setBarError(null);
     showToast(strings[result.toast], result.kind);
   }, [showToast]);
 
@@ -240,8 +303,12 @@ export function EditorScreen() {
   async function onHashChange(next: Route, prev: Route) {
     const skipGuard = skipGuardRef.current;
     skipGuardRef.current = false;
+    focusTargetRef.current = next;
     const result = await workspace.openRoute(next, editorGuard, { skipGuard });
-    if (!result.ok) navigate(prev, { replace: true });
+    if (!result.ok) {
+      focusTargetRef.current = null;
+      navigate(prev, { replace: true });
+    }
     else if (result.replace) navigate(result.replace, { replace: true });
   }
 
@@ -298,6 +365,14 @@ export function EditorScreen() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-white text-[var(--fg)]">
+      {/* 건너뛰기 — 해시를 바꾸는 <a href="#…">는 M6 해시 주소와 충돌하므로 버튼 (M7 FR-007, research R6) */}
+      <button
+        type="button"
+        onClick={focusMain}
+        className="sr-only rounded-md border border-[var(--border)] bg-white px-3 py-1.5 text-[13px] font-semibold text-[var(--fg)] focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+      >
+        {strings.skipToContent}
+      </button>
       <header className="flex flex-none items-center gap-3.5 border-b border-[var(--border)] px-[18px] py-[11px]">
         <div className="mr-1 flex items-center gap-[9px]">
           <div
@@ -352,11 +427,14 @@ export function EditorScreen() {
           onChange={setSidebar}
           onCommit={commitSidebar}
         />
-        <section aria-label={strings.contentLabel} className="flex min-w-[480px] flex-1 flex-col">
-          {screen === "dashboard" && <Dashboard docs={workspace.docs} folders={workspace.folders} />}
+        <main aria-label={strings.contentLabel} className="flex min-w-[480px] flex-1 flex-col">
+          {screen === "dashboard" && <Dashboard docs={workspace.docs} folders={workspace.folders} headingRef={dashboardHeadingRef} />}
           {screen === "notFound" && (
             <div className="flex items-center gap-3 px-8 py-6 text-sm text-[var(--fg-muted)]">
-              <span>{strings.notFound}</span>
+              {/* tabIndex=-1: 스크립트 포커스 전용 비상호작용 문구 (M7 FR-008 예외) */}
+              <p ref={notFoundRef} tabIndex={-1} className="m-0 outline-none">
+                {strings.notFound}
+              </p>
               <a
                 href={formatRoute({ view: "dashboard" })}
                 className="rounded-md border border-[var(--border)] px-3 py-1.5 font-semibold text-[var(--fg)] hover:bg-[#f1f3f9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
@@ -383,7 +461,8 @@ export function EditorScreen() {
           </div>
 
           <div ref={splitRowRef} className="flex min-h-0 flex-1">
-            <div
+            <section
+              aria-label={strings.editorPaneLabel}
               className="flex min-w-[240px] flex-col bg-[var(--editor-bg)]"
               style={{ flex: "0 0 var(--editor-ratio)" }}
             >
@@ -400,7 +479,7 @@ export function EditorScreen() {
               ) : (
                 workspace.ready && <p className="m-0 px-[26px] pt-6 text-sm text-[var(--fg-muted)]">{strings.emptyEditor}</p>
               )}
-            </div>
+            </section>
             <ResizeHandle
               label={strings.splitHandleLabel}
               bounds={EDITOR}
@@ -428,7 +507,7 @@ export function EditorScreen() {
           />
             </>
           )}
-        </section>
+        </main>
       </div>
       <InsertDialog request={dialog} onSubmit={submitDialog} onClose={closeDialog} />
       <ConfirmDialog request={workspace.confirm} onChoose={workspace.resolveConfirm} />

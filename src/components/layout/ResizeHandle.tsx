@@ -70,7 +70,7 @@ export function ResizeHandle({ label, bounds, value, valueText, fromPointer, onC
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
       onKeyDown={onKeyDown}
-      className="group relative z-10 -mx-1 flex w-2 flex-none cursor-col-resize touch-none justify-center outline-none focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+      className="group relative z-10 -mx-1 flex w-2 flex-none cursor-col-resize touch-none justify-center focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
     >
       <span className="h-full w-px bg-[var(--border)] group-hover:bg-[var(--accent)] group-active:bg-[var(--accent)]" />
     </div>

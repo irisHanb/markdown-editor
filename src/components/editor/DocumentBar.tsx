@@ -25,7 +25,7 @@ export function DocumentBar({ folders, form, onChange, error, folderRef, titleRe
   const folderInvalid = error?.field === "folder";
   const titleInvalid = error?.field === "title";
   return (
-    <div className="flex-none border-b border-[var(--border)] px-3.5">
+    <section aria-label={strings.documentInfoLabel} className="flex-none border-b border-[var(--border)] px-3.5">
       <div className="flex h-10 items-center gap-4 text-[12.5px] text-[var(--fg-muted)]">
         <label className="flex items-center gap-2">
           {strings.folderLabel}
@@ -35,7 +35,7 @@ export function DocumentBar({ folders, form, onChange, error, folderRef, titleRe
             onChange={(e) => onChange({ ...form, folderId: e.target.value || null })}
             aria-invalid={folderInvalid}
             aria-describedby={folderInvalid ? errorId : undefined}
-            className={`${fieldClass} ${folderInvalid ? "border-[#b42318]" : "border-[#dfe4ec]"}`}
+            className={`${fieldClass} ${folderInvalid ? "border-[#b42318]" : "border-[var(--input-border)]"}`}
           >
             <option value="">{strings.selectFolder}</option>
             {folders.map((f) => (
@@ -54,7 +54,7 @@ export function DocumentBar({ folders, form, onChange, error, folderRef, titleRe
             onChange={(e) => onChange({ ...form, title: e.target.value })}
             aria-invalid={titleInvalid}
             aria-describedby={titleInvalid ? errorId : undefined}
-            className={`${fieldClass} min-w-0 flex-1 ${titleInvalid ? "border-[#b42318]" : "border-[#dfe4ec]"}`}
+            className={`${fieldClass} min-w-0 flex-1 ${titleInvalid ? "border-[#b42318]" : "border-[var(--input-border)]"}`}
           />
         </label>
       </div>
@@ -63,6 +63,6 @@ export function DocumentBar({ folders, form, onChange, error, folderRef, titleRe
           {error.message}
         </p>
       )}
-    </div>
+    </section>
   );
 }

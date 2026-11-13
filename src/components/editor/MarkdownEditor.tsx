@@ -11,7 +11,8 @@ import type { EditorState as PluginState } from "@/plugins/types";
 // 시안의 평문 편집 영역과 맞추려고 basicSetup(줄번호·접기·활성 줄)을 쓰지 않는다 (research R4).
 const theme = EditorView.theme({
   "&": { height: "100%", backgroundColor: "var(--editor-bg)", color: "#3a4458" },
-  "&.cm-focused": { outline: "none" },
+  // 포커스 테두리 — 안쪽 2px라 레이아웃이 바뀌지 않는다 (M7 FR-008, research R4)
+  "&.cm-focused": { outline: "2px solid var(--accent)", outlineOffset: "-2px" },
   ".cm-scroller": {
     fontFamily: "var(--font-mono), ui-monospace, monospace",
     fontSize: "13.5px",

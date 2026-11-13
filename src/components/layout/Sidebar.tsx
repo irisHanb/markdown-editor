@@ -80,7 +80,7 @@ function NameInput(props: {
           }
         }}
         onBlur={props.onCancel}
-        className="h-7 w-full rounded-md border border-[var(--accent)] bg-white px-2 text-[13px] text-[var(--fg)] outline-none"
+        className="h-7 w-full rounded-md border border-[var(--accent)] bg-white px-2 text-[13px] text-[var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--accent)]"
       />
       {error && (
         <p id={errorId} className="m-0 mt-1 text-xs text-[#b42318]">

@@ -23,6 +23,9 @@
 | M6-save | 초안 저장 결정·자동 접미사·옮기기 충돌 (FR-003–FR-006) | `tests/lib/workspace/save-plan.test.ts` | GREEN |
 | M6-date | 수정 시각 표기 (FR-007) | `tests/lib/date.test.ts` | GREEN |
 | M6-repo | 저장소 updateDocument (FR-006) | `tests/lib/workspace/repository.test.ts` | GREEN |
+| M7-dirty | 저장하지 않은 변경 판단 (FR-002) | `tests/lib/workspace/dirty.test.ts` | GREEN |
+| M7-names | 접근 가능한 이름·영역·건너뛰기 버튼 (FR-007, FR-009, FR-010, SC-003) | `tests/a11y/names.test.tsx` | GREEN |
+| M7-contrast | 색 대비 (FR-013, SC-005) | `tests/a11y/contrast.test.ts` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -90,5 +93,17 @@
 | 명령 | 결과 |
 |------|------|
 | `npm test` | 17 files, 316 tests passed, 실패 0건 |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 (`Compiled successfully`) |
+- 2026-11-13 M7-names·M7-contrast RED: 9 failed / 20 passed. 실패 — 영역 이름 3건(`section:상태 표시줄`·`section:문서 정보`·`main:편집 영역`), 편집기 칸 `editorPaneLabel` 없음, 첫 상호작용 요소 `'대시보드'`(건너뛰기 버튼 없음), 목록 번호 `'#8a93a6'`, `--input-border` 없음, 입력 칸 토큰 사용 0회 ×2. 이름 없는 요소 검사 10건은 이미 통과
+- 2026-11-13 M7-dirty RED: `Cannot find package '@/lib/workspace/dirty'`
+- 2026-11-13 M7-dirty GREEN: 9 tests passed. `EditorScreen` 저장 확인·이탈 경고·[취소]가 같은 기준 사용. `tests/lib` 12 files·142 tests 통과
+- 2026-11-13 M7-names·M7-contrast GREEN: `tests/a11y` 29 tests passed (건너뛰기 버튼은 US2에서, 영역 이름·`--input-border`·목록 번호 색은 US3에서 통과)
+
+## 품질 게이트 — M7 (2026-11-13)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 20 files, 354 tests passed (M6까지 316 + M7 38), 실패 0건 |
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | 성공 (`Compiled successfully`) |
