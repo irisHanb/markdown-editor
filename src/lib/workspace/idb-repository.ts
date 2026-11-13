@@ -69,11 +69,21 @@ export async function createIdbRepository(): Promise<Repository> {
       return d;
     },
     renameDocument: (id, title) => update("documents", id, (d) => void (d.title = title)),
-    saveContent: (id, content) =>
-      update("documents", id, (d) => {
-        d.content = content;
-        d.updatedAt = Date.now();
-      }),
+    updateDocument: async (id, patch) => {
+      const tx = db.transaction(["folders", "documents"], "readwrite");
+      const fail = (msg: string) => {
+        tx.done.catch(() => {}); // abort로 생기는 거부는 아래 throw로 대신 알린다
+        tx.abort();
+        throw new Error(msg);
+      };
+      if (patch.folderId !== undefined && !(await tx.objectStore("folders").get(patch.folderId))) {
+        fail(`folder ${patch.folderId} 없음`);
+      }
+      const d = await tx.objectStore("documents").get(id);
+      if (!d) fail(`document ${id} 없음`);
+      await tx.objectStore("documents").put({ ...(d as Doc), ...patch, updatedAt: Date.now() });
+      await tx.done;
+    },
     deleteDocument: (id) => db.delete("documents", id),
 
     getMeta: async <K extends keyof Meta>(key: K) => (await db.get("meta", key)) as Meta[K] | undefined,

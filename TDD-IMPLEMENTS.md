@@ -19,6 +19,10 @@
 | M3-repo | 저장소 계약 — IndexedDB·메모리 (FR-001, FR-008, FR-015) | `tests/lib/workspace/repository.test.ts` | GREEN |
 | M3-bootstrap | 기존 문서 옮기기·첫 방문 샘플 (FR-002–FR-004) | `tests/lib/workspace/bootstrap.test.ts` | GREEN |
 | M3-switch | 저장하지 않은 변경 처리 순서 (FR-010, SC-005) | `tests/lib/workspace/switch.test.ts` | GREEN |
+| M6-route | 해시 주소 해석·생성 (FR-013, FR-017) | `tests/lib/route.test.ts` | GREEN |
+| M6-save | 초안 저장 결정·자동 접미사·옮기기 충돌 (FR-003–FR-006) | `tests/lib/workspace/save-plan.test.ts` | GREEN |
+| M6-date | 수정 시각 표기 (FR-007) | `tests/lib/date.test.ts` | GREEN |
+| M6-repo | 저장소 updateDocument (FR-006) | `tests/lib/workspace/repository.test.ts` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -76,3 +80,15 @@
 | `npm test` | 14 files, 280 tests passed (연속 2회). 첫 실행에서 `perf.test.ts` 1건이 337ms로 실패했으나 단독 2회·전체 2회 재실행 모두 통과 — 실행 시점 CPU 부하로 판단 |
 | `npx tsc --noEmit` | 오류 0건 |
 | `npm run build` | 성공 |
+- 2026-11-12 M6 route·repo RED: `Cannot find package '@/lib/route/route'`, `repo.updateDocument is not a function` 8건
+- 2026-11-12 M6 route·repo GREEN: 15 files, 301 tests passed (saveContent → updateDocument)
+- 2026-11-12 M6 save·date RED: `Cannot find package '@/lib/workspace/save-plan'`, `'@/lib/text/date'`
+- 2026-11-12 M6 save·date GREEN: 15 tests passed
+
+## 품질 게이트 — M6 (2026-11-13)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 17 files, 316 tests passed, 실패 0건 |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 (`Compiled successfully`) |

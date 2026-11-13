@@ -51,14 +51,33 @@ describe.each(impls)("Repository 계약: %s", (_name, make) => {
     expect((await repo.getDocument(d.id))?.title).toBe("b");
   });
 
-  it("saveContent는 본문과 updatedAt을 갱신한다", async () => {
+  it("updateDocument는 본문과 updatedAt을 갱신한다", async () => {
     const f = await repo.createFolder("회의");
     const d = await repo.createDocument(f.id, "a");
     await new Promise((r) => setTimeout(r, 5));
-    await repo.saveContent(d.id, "# 본문");
+    await repo.updateDocument(d.id, { content: "# 본문" });
     const saved = await repo.getDocument(d.id);
     expect(saved?.content).toBe("# 본문");
     expect(saved?.updatedAt).toBeGreaterThan(d.updatedAt);
+  });
+
+  it("updateDocument로 제목·폴더를 바꾼다 (옮기기)", async () => {
+    const f = await repo.createFolder("회의");
+    const g = await repo.createFolder("기록");
+    const d = await repo.createDocument(f.id, "a", "본문");
+    await repo.updateDocument(d.id, { title: "b", folderId: g.id });
+    expect(await repo.getDocument(d.id)).toMatchObject({ title: "b", folderId: g.id, content: "본문" });
+  });
+
+  it("없는 폴더로 옮기면 reject하고 문서는 그대로", async () => {
+    const f = await repo.createFolder("회의");
+    const d = await repo.createDocument(f.id, "a", "본문");
+    await expect(repo.updateDocument(d.id, { title: "b", folderId: "nope", content: "새" })).rejects.toThrow();
+    expect(await repo.getDocument(d.id)).toEqual(d);
+  });
+
+  it("없는 문서는 reject", async () => {
+    await expect(repo.updateDocument("nope", { content: "x" })).rejects.toThrow();
   });
 
   it("deleteDocument", async () => {

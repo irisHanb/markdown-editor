@@ -55,10 +55,10 @@ export function createMemoryRepository(): Repository {
     renameDocument: async (id, title) => {
       mustDoc(id).title = title;
     },
-    saveContent: async (id, content) => {
+    updateDocument: async (id, patch) => {
       const d = mustDoc(id);
-      d.content = content;
-      d.updatedAt = Date.now();
+      if (patch.folderId !== undefined) mustFolder(patch.folderId);
+      Object.assign(d, patch, { updatedAt: Date.now() });
     },
     deleteDocument: async (id) => {
       docs.delete(id);

@@ -1,19 +1,25 @@
 "use client";
 
 import type { EditorView } from "@codemirror/view";
+import { FilePlus, LayoutList } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 import { ResizeHandle } from "@/components/layout/ResizeHandle";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useHashRoute } from "@/components/workspace/useHashRoute";
 import { useWorkspace } from "@/components/workspace/useWorkspace";
 import { strings } from "@/content/strings";
-import { applySave, revert, type ToastKey, type ToastKind } from "@/lib/document/session";
+import { revert, type ToastKind } from "@/lib/document/session";
 import { DEFAULT_LAYOUT, EDITOR, type Layout, loadLayout, SIDEBAR, saveLayout } from "@/lib/layout/layout";
 import { renderMarkdown } from "@/lib/markdown/pipeline";
+import { formatRoute, type Route } from "@/lib/route/route";
 import { countChars, countLines } from "@/lib/text/count";
+import type { DocumentForm } from "@/lib/workspace/save-plan";
 import { plugins } from "@/plugins";
 import { formatShortcut } from "@/plugins/shortcut";
 import type { DialogValues, EditorChange, EditorState, MarkdownPlugin } from "@/plugins/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { type BarError, DocumentBar } from "./DocumentBar";
 import { type DialogRequest, InsertDialog } from "./InsertDialog";
 import { type KeyBinding, MarkdownEditor } from "./MarkdownEditor";
 import { Preview } from "./Preview";
@@ -26,7 +32,7 @@ const DEBOUNCE_MS = 100;
 const TOAST_MS = 1900; // FR-014
 
 type Derived = { html: string; chars: number; lines: number };
-type ToastState = { key: ToastKey; kind: ToastKind } | null;
+type ToastState = { message: string; kind: ToastKind } | null;
 
 function derive(doc: string): Derived {
   return { html: renderMarkdown(doc), chars: countChars(doc), lines: countLines(doc) };
@@ -76,9 +82,16 @@ export function EditorScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [derived, setDerived] = useState<Derived | null>(null);
-  // 폴더·문서 저장소 (specs/004-folder-storage). 열린 문서가 바뀌면 편집기를 새로 만든다(research R4).
+  // 폴더·문서 저장소 (specs/004-folder-storage). 열린 대상이 바뀌면 편집기를 새로 만든다(M3 research R4).
   const workspace = useWorkspace();
-  const current = workspace.current;
+  const { current, view: screen, editorKey } = workspace;
+  const hasEditor = screen === "doc" || screen === "new";
+  // 문서 바 (specs/005-document-flow FR-002)
+  const [form, setForm] = useState<DocumentForm>({ folderId: null, title: "" });
+  const [barError, setBarError] = useState<BarError>(null);
+  const folderSelectRef = useRef<HTMLSelectElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const skipGuardRef = useRef(false);
   const [toast, setToast] = useState<ToastState>(null);
   // 레이아웃 (specs/002-sidebar-layout). 첫 화면 CSS 변수는 layout.tsx 인라인 스크립트가 이미 적용했다.
   const sidebarRef = useRef<HTMLElement>(null);
@@ -102,39 +115,68 @@ export function EditorScreen() {
     };
   }, []);
 
-  // 다른 문서를 열면 baseline·프리뷰·활성 표시를 그 문서로 맞춘다.
+  // 다른 문서·새 초안을 열면 baseline·프리뷰·활성 표시를 맞춘다. 초안이 저장돼도 editorKey는 그대로다.
   const currentId = current?.id ?? null;
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     baselineRef.current = current?.content ?? "";
-    setDerived(current ? derive(current.content) : null);
+    setDerived(editorKey ? derive(current?.content ?? "") : null);
     setActiveIds(new Set());
-    // 문서 id가 바뀔 때만 — 저장으로 current.content가 바뀌어도 다시 계산하지 않는다.
-  }, [currentId]);
+    setBarError(null);
+    // 새 문서는 편집 영역에 커서를 둔다 (US1-1)
+    if (screen === "new") requestAnimationFrame(() => viewRef.current?.focus());
+  }, [editorKey]);
+
+  // 문서 바 값 = 열린 대상의 폴더·제목 (이름 바꾸기·옮기기 후에도 맞춘다)
+  const draft = workspace.draft;
+  useEffect(() => {
+    if (current) setForm({ folderId: current.folderId, title: current.title });
+    else if (draft) setForm({ folderId: draft.folderId, title: draft.title });
+  }, [editorKey, current?.folderId, current?.title, draft]);
 
   const handleChange = useCallback((doc: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDerived(derive(doc)), DEBOUNCE_MS);
   }, []);
 
-  const showToast = useCallback((key: ToastKey, kind: ToastKind) => {
+  const showToast = useCallback((message: string, kind: ToastKind) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ key, kind });
+    setToast({ message, kind });
     toastTimerRef.current = setTimeout(() => setToast(null), TOAST_MS);
   }, []);
 
-  // 디바운스 값이 아니라 현재 편집기 문서를 저장한다 — 마지막 100ms 입력 누락 방지 (M1 research R8).
-  const { save } = workspace;
+  const { route, navigate } = useHashRoute((next, prev) => void onHashChange(next, prev));
+
+  // [저장] — 디바운스 값이 아니라 현재 편집기 문서를 저장한다(M1 research R8).
+  // 초안이면 폴더·제목으로 새 문서를 만들고, 문서면 본문·제목·폴더(옮기기)를 갱신한다 (M6 FR-003–FR-006).
+  const { saveForm } = workspace;
   const handleSave = useCallback(async (): Promise<{ ok: boolean }> => {
     const view = viewRef.current;
     if (!view) return { ok: false };
-    const doc = view.state.doc.toString();
-    const saved = await save(doc);
-    const result = applySave(saved, doc, baselineRef.current);
-    baselineRef.current = result.baseline;
-    showToast(result.toast, result.kind);
-    return saved;
-  }, [save, showToast]);
+    const content = view.state.doc.toString();
+    const outcome = await saveForm(form, content);
+    if (!outcome.ok) {
+      if (outcome.reason === "storage") showToast(strings.toastSaveFailed, "error");
+      else if (outcome.reason === "noFolder") {
+        setBarError({ field: "folder", message: strings.needFolder });
+        folderSelectRef.current?.focus();
+      } else {
+        const message =
+          outcome.reason === "duplicate"
+            ? strings.moveDuplicate
+            : { empty: strings.nameEmpty, tooLong: strings.nameTooLong, slash: strings.nameSlash }[outcome.reason];
+        setBarError({ field: "title", message });
+        titleInputRef.current?.focus();
+      }
+      return { ok: false };
+    }
+    setBarError(null);
+    baselineRef.current = content;
+    showToast(outcome.renamedTo ? strings.renamedOnSave(outcome.renamedTo) : strings.toastSaved, "success");
+    // 초안이 문서가 되면 기록을 늘리지 않고 그 문서 주소로 바꾼다 (FR-013)
+    if (outcome.createdId) navigate({ view: "doc", id: outcome.createdId }, { replace: true });
+    return { ok: true };
+  }, [form, navigate, saveForm, showToast]);
 
   // 문서 전환·새 문서 전에 넘기는 편집기 상태 (FR-010)
   const editorGuard = useMemo(
@@ -190,8 +232,56 @@ export function EditorScreen() {
     if (!view) return;
     const result = revert(baselineRef.current);
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: result.doc } });
-    showToast(result.toast, result.kind);
+    showToast(strings[result.toast], result.kind);
   }, [showToast]);
+
+  // 모든 화면 이동은 해시 변경 → 여기 1곳 (M6 research R2). 취소·저장 실패면 이전 주소로 되돌린다.
+  // ponytail: 되돌릴 때 replaceState라 같은 문서 기록이 1개 더 남을 수 있다 — 앞으로 가기에서 같은 문서가 한 번 더 열리는 수준.
+  async function onHashChange(next: Route, prev: Route) {
+    const skipGuard = skipGuardRef.current;
+    skipGuardRef.current = false;
+    const result = await workspace.openRoute(next, editorGuard, { skipGuard });
+    if (!result.ok) navigate(prev, { replace: true });
+    else if (result.replace) navigate(result.replace, { replace: true });
+  }
+
+  // 시작: 주소의 화면을 연다. 해시가 없으면 마지막 문서·첫 문서·대시보드 순 (FR-012)
+  const { ready, openRoute } = workspace;
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (!ready || startedRef.current) return;
+    startedRef.current = true;
+    void (async () => {
+      const result = await openRoute(route, editorGuard, { skipGuard: true });
+      if (result.ok && result.replace) navigate(result.replace, { replace: true });
+    })();
+  }, [ready, openRoute, route, editorGuard, navigate]);
+
+  // 사이드바 [새 문서](M3): 확인 → 만들기 → 그 문서로 이동(확인은 이미 했으므로 생략)
+  const createFromSidebar = useCallback(
+    async (folderId: string, title: string) => {
+      if (!(await workspace.confirmLeave(editorGuard))) return;
+      const id = await workspace.createDocument(folderId, title);
+      if (!id) return;
+      skipGuardRef.current = true;
+      navigate({ view: "doc", id });
+    },
+    [editorGuard, navigate, workspace],
+  );
+
+  const removeFromSidebar = useCallback(
+    async (kind: "folder" | "doc", id: string) => {
+      const r = await workspace.remove(kind, id);
+      if (r.next) navigate(r.next, { replace: true });
+      return r.removed;
+    },
+    [navigate, workspace],
+  );
+
+  const navButton = (active: boolean) =>
+    `inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-[var(--border)] px-3 text-[13px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${
+      active ? "bg-[#e8edfb] text-[var(--accent)]" : "bg-white text-[var(--fg)] hover:bg-[#f1f3f9]"
+    }`;
 
   useEffect(() => {
     if (!loadedLayout) return;
@@ -218,6 +308,21 @@ export function EditorScreen() {
           </div>
           <span className="text-[14.5px] font-bold tracking-[-0.01em] text-[#2a3346]">{strings.appName}</span>
         </div>
+        <nav className="ml-auto flex items-center gap-2" aria-label={strings.appName}>
+          <button
+            type="button"
+            aria-current={screen === "dashboard" ? "page" : undefined}
+            onClick={() => navigate({ view: "dashboard" })}
+            className={navButton(screen === "dashboard")}
+          >
+            <LayoutList size={16} aria-hidden="true" />
+            {strings.dashboard}
+          </button>
+          <button type="button" onClick={() => navigate({ view: "new" })} className={navButton(false)}>
+            <FilePlus size={16} aria-hidden="true" />
+            {strings.newDocument}
+          </button>
+        </nav>
       </header>
       {workspace.storageUnavailable && (
         <p role="status" className="m-0 flex-none border-b border-[#f5d9b0] bg-[#fff4e5] px-[18px] py-1.5 text-[12.5px] text-[var(--fg)]">
@@ -233,10 +338,10 @@ export function EditorScreen() {
           currentId={currentId}
           onCreateFolder={workspace.createFolder}
           onToggleFolder={workspace.toggleFolder}
-          onOpenDocument={(id) => void workspace.requestOpen(id, editorGuard)}
-          onCreateDocument={(folderId, title) => void workspace.createDocument(folderId, title, editorGuard)}
+          onOpenDocument={(id) => navigate({ view: "doc", id })}
+          onCreateDocument={(folderId, title) => void createFromSidebar(folderId, title)}
           onRename={workspace.rename}
-          onDelete={workspace.remove}
+          onDelete={removeFromSidebar}
         />
         <ResizeHandle
           label={strings.sidebarHandleLabel}
@@ -248,8 +353,33 @@ export function EditorScreen() {
           onCommit={commitSidebar}
         />
         <section aria-label={strings.contentLabel} className="flex min-w-[480px] flex-1 flex-col">
+          {screen === "dashboard" && <Dashboard docs={workspace.docs} folders={workspace.folders} />}
+          {screen === "notFound" && (
+            <div className="flex items-center gap-3 px-8 py-6 text-sm text-[var(--fg-muted)]">
+              <span>{strings.notFound}</span>
+              <a
+                href={formatRoute({ view: "dashboard" })}
+                className="rounded-md border border-[var(--border)] px-3 py-1.5 font-semibold text-[var(--fg)] hover:bg-[#f1f3f9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              >
+                {strings.toDashboard}
+              </a>
+            </div>
+          )}
+          {hasEditor && (
+            <>
+          <DocumentBar
+            folders={workspace.folders}
+            form={form}
+            onChange={(f) => {
+              setForm(f);
+              setBarError(null);
+            }}
+            error={barError}
+            folderRef={folderSelectRef}
+            titleRef={titleInputRef}
+          />
           <div className="flex flex-none items-center border-b border-[var(--border)] px-3.5 py-1.5">
-            <Toolbar onRun={runPlugin} activeIds={activeIds} titleOf={titleOf} disabled={!current} />
+            <Toolbar onRun={runPlugin} activeIds={activeIds} titleOf={titleOf} />
           </div>
 
           <div ref={splitRowRef} className="flex min-h-0 flex-1">
@@ -258,10 +388,10 @@ export function EditorScreen() {
               style={{ flex: "0 0 var(--editor-ratio)" }}
             >
               <PaneHeader dotColor="var(--accent)" label={strings.editorHeader} />
-              {current ? (
+              {editorKey ? (
                 <MarkdownEditor
-                  key={current.id}
-                  initialDoc={current.content}
+                  key={editorKey}
+                  initialDoc={current?.content ?? ""}
                   onChange={handleChange}
                   onSelection={handleSelection}
                   bindings={bindings}
@@ -293,15 +423,16 @@ export function EditorScreen() {
             path={current ? `${workspace.folders.find((f) => f.id === current.folderId)?.name ?? ""} / ${current.title}` : null}
             charCount={derived?.chars ?? 0}
             lineCount={derived?.lines ?? 1}
-            disabled={!current}
             onCancel={handleCancel}
             onSave={() => void handleSave()}
           />
+            </>
+          )}
         </section>
       </div>
       <InsertDialog request={dialog} onSubmit={submitDialog} onClose={closeDialog} />
       <ConfirmDialog request={workspace.confirm} onChoose={workspace.resolveConfirm} />
-      <Toast message={toast ? strings[toast.key] : null} kind={toast?.kind ?? "success"} />
+      <Toast message={toast?.message ?? null} kind={toast?.kind ?? "success"} />
     </div>
   );
 }

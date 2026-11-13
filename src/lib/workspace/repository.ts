@@ -20,6 +20,8 @@ export type Doc = {
   updatedAt: number;
 };
 
+export type DocPatch = { content?: string; title?: string; folderId?: string };
+
 export type Meta = { lastDocId: string | null; legacyImported: true };
 
 export interface Repository {
@@ -35,8 +37,8 @@ export interface Repository {
 
   createDocument(folderId: string, title: string, content?: string): Promise<Doc>;
   renameDocument(id: string, title: string): Promise<void>;
-  /** 본문과 updatedAt 갱신 (FR-005) */
-  saveContent(id: string, content: string): Promise<void>;
+  /** 본문·제목·폴더를 한 번에 갱신하고 updatedAt 갱신. 대상 폴더·문서가 없으면 reject (M6 research R4) */
+  updateDocument(id: string, patch: DocPatch): Promise<void>;
   deleteDocument(id: string): Promise<void>;
 
   getMeta<K extends keyof Meta>(key: K): Promise<Meta[K] | undefined>;
