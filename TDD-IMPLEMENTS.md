@@ -33,6 +33,10 @@
 | U1-highlight | 코드 블록 문법 강조·허용 목록 XSS 회귀·성능·색 대비 (007 FR-010, 헌장 1.1.0) | `tests/markdown/highlight.test.ts`, `tests/markdown/conformance.test.ts`, `tests/a11y/contrast.test.ts` | GREEN |
 | U1-new-sample | 새 문서 샘플 본문·초안 기준값 (007 FR-011) | `tests/lib/workspace/draft.test.ts` | GREEN |
 | U1-menu-icons | 사이드바 [⋯] 메뉴 제거, 줄마다 아이콘 버튼 (007 FR-012) | `tests/a11y/names.test.tsx` | GREEN |
+| F8-path | .md 경로 규칙 (008 FR-003·FR-005) | `tests/lib/export/md-path.test.ts` | GREEN |
+| F8-write | 연결 폴더에 쓰기·이전 파일 삭제·권한 (008 FR-003·FR-004·FR-006) | `tests/lib/export/fs-export.test.ts` | GREEN |
+| F8-meta | 연결 폴더 핸들 저장 (008 FR-002) | `tests/lib/workspace/repository.test.ts` | GREEN |
+| F8-download | 사이드바 문서 줄 [다운로드]·파일 이름·Blob (008 FR-007–FR-010) | `tests/lib/export/download.test.ts`, `tests/lib/export/md-path.test.ts`, `tests/a11y/names.test.tsx` | GREEN |
 
 ## 기록
 - 2026-11-12 US1 RED: `npm test` → 4 files failed, `Cannot find package '@/lib/text/count'`, `Cannot find package '@/lib/markdown/pipeline'`
@@ -141,3 +145,15 @@
 - 2026-11-13 U1-menu-icons RED: `Element type is invalid … got: undefined`(RowMenu 미export) → GREEN: 새 문서 `FilePlus`·이름 바꾸기 `Pencil`·삭제 `Trash2`
 - 2026-11-13 U1-menu-icons 2차 RED: 12 failed(`aria-haspopup` 있음, 줄 버튼 없음) → GREEN: `RowMenu`·`menuFor`·ContextMenu/Shift+F10 처리 삭제, 폴더 줄 [새 문서·이름 바꾸기·삭제], 문서 줄 [이름 바꾸기·삭제]
 - 2026-11-13 U1-menu-icons 3차 RED: `invisible` 클래스 있음 1건 → GREEN: 줄 버튼 항상 표시
+- 2026-11-13 008 RED: `Cannot find package '@/lib/export/md-path'`·`'@/lib/export/fs-export'`, `tsc` — `"exportDir"`이 `keyof Meta`가 아님
+- 2026-11-13 008 GREEN: 24 files, 409 tests passed. `md-path.ts`·`fs-export.ts`(가짜 핸들로 검사), `Meta.exportDir`, `saveForm`이 실제 저장된 폴더·제목 반환, 헤더 [저장 폴더 연결]
+
+## 품질 게이트 — 008 .md 파일 쓰기 (2026-11-13)
+
+| 명령 | 결과 |
+|------|------|
+| `npm test` | 24 files, 409 tests passed, 실패 0건 |
+| `npx tsc --noEmit` | 오류 0건 |
+| `npm run build` | 성공 |
+- 2026-11-14 F8-download RED: 5 failed + 1 file — 다운로드 버튼 없음 4건, `mdFileName is not a function`, `Cannot find package '@/lib/export/download'`
+- 2026-11-14 F8-download GREEN: 25 files, 416 tests passed. `mdFileName`, `downloadMarkdown`(Blob `text/markdown;charset=utf-8`), 사이드바 문서 줄 [다운로드·이름 바꾸기·삭제]

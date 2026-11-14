@@ -1,7 +1,7 @@
 "use client";
 
 import type { EditorView } from "@codemirror/view";
-import { FilePlus, LayoutList } from "lucide-react";
+import { FilePlus, FolderSync, LayoutList } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { ResizeHandle } from "@/components/layout/ResizeHandle";
@@ -10,6 +10,8 @@ import { useHashRoute } from "@/components/workspace/useHashRoute";
 import { useWorkspace } from "@/components/workspace/useWorkspace";
 import { strings } from "@/content/strings";
 import { revert, type ToastKind } from "@/lib/document/session";
+import { writeMarkdown } from "@/lib/export/fs-export";
+import { mdPath } from "@/lib/export/md-path";
 import type { ConfirmRequest } from "@/components/workspace/useWorkspace";
 import { DEFAULT_LAYOUT, EDITOR, type Layout, loadLayout, SIDEBAR, saveLayout } from "@/lib/layout/layout";
 import { renderMarkdown } from "@/lib/markdown/pipeline";
@@ -104,10 +106,13 @@ export function EditorScreen() {
   const [dialog, setDialog] = useState<DialogRequest | null>(null);
   // 정적 export라 첫 렌더에는 플랫폼을 모른다 — 마운트 후 판정해 툴팁에 단축키를 붙인다 (research R7).
   const [isMac, setIsMac] = useState<boolean | null>(null);
+  // File System Access API 지원 여부 — 정적 export라 마운트 후 판정 (specs/008-md-file-export FR-001)
+  const [canExport, setCanExport] = useState(false);
 
   useEffect(() => {
     setLayout(loadLayout(getStorage()));
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent));
+    setCanExport("showDirectoryPicker" in window);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -189,11 +194,14 @@ export function EditorScreen() {
 
   // [저장] — 디바운스 값이 아니라 현재 편집기 문서를 저장한다(M1 research R8).
   // 초안이면 폴더·제목으로 새 문서를 만들고, 문서면 본문·제목·폴더(옮기기)를 갱신한다 (M6 FR-003–FR-006).
-  const { saveForm } = workspace;
+  const { saveForm, exportDir, folders } = workspace;
   const handleSave = useCallback(async (): Promise<{ ok: boolean }> => {
     const view = viewRef.current;
     if (!view) return { ok: false };
     const content = view.state.doc.toString();
+    const folderName = (id: string) => folders.find((f) => f.id === id)?.name ?? "";
+    // 저장 전 경로 — 이번 저장으로 제목·폴더가 바뀌면 이 파일을 지운다 (008 FR-004)
+    const previous = current ? mdPath(folderName(current.folderId), current.title) : undefined;
     const outcome = await saveForm(form, content);
     if (!outcome.ok) {
       if (outcome.reason === "storage") showNotice(strings.toastSaveFailed, "error");
@@ -212,11 +220,23 @@ export function EditorScreen() {
     }
     setBarError(null);
     baselineRef.current = content;
-    showNotice(outcome.renamedTo ? strings.renamedOnSave(outcome.renamedTo) : strings.toastSaved, "success");
+    let message = outcome.renamedTo ? strings.renamedOnSave(outcome.renamedTo) : strings.toastSaved;
+    let kind: ToastKind = "success";
+    // 연결 폴더가 있으면 .md 파일도 쓴다. 실패해도 브라우저 저장소 저장은 그대로 (008 FR-003·FR-006)
+    if (exportDir) {
+      const target = mdPath(folderName(outcome.saved.folderId), outcome.saved.title);
+      const written = await writeMarkdown(exportDir, target, content, previous);
+      if (written.ok) message = `${message}. ${strings.fileWritten(written.path)}`;
+      else {
+        message = strings.fileWriteFailed;
+        kind = "error";
+      }
+    }
+    showNotice(message, kind);
     // 초안이 문서가 되면 기록을 늘리지 않고 그 문서 주소로 바꾼다 (FR-013)
     if (outcome.createdId) navigate({ view: "doc", id: outcome.createdId }, { replace: true });
     return { ok: true };
-  }, [form, navigate, saveForm, showNotice]);
+  }, [current, exportDir, folders, form, navigate, saveForm, showNotice]);
 
   // 문서 전환·새 문서·탭 닫기 전에 넘기는 편집기 상태 (M3 FR-010, M7 FR-002 — 본문·폴더·제목)
   const editorGuard = useMemo(
@@ -403,6 +423,20 @@ export function EditorScreen() {
             <FilePlus size={16} aria-hidden="true" />
             {strings.newDocument}
           </button>
+          {/* 저장 시 .md 파일을 쓸 폴더 — 지원 브라우저(Chrome·Edge)에서만 (008 FR-001) */}
+          {canExport && (
+            <button
+              type="button"
+              onClick={async () => {
+                const dir = await workspace.connectExportDir();
+                if (dir) showNotice(strings.exportConnected(dir.name), "success");
+              }}
+              className={navButton(false)}
+            >
+              <FolderSync size={16} aria-hidden="true" />
+              {workspace.exportDir ? strings.exportFolder(workspace.exportDir.name) : strings.connectExport}
+            </button>
+          )}
         </nav>
       </header>
       {workspace.storageUnavailable && (

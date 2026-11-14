@@ -1,8 +1,10 @@
 "use client";
 
-import { ChevronDown, ChevronRight, FilePlus, FileText, FolderPlus, type LucideIcon, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, FilePlus, FileText, FolderPlus, type LucideIcon, Pencil, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type Ref, useEffect, useRef, useState } from "react";
 import { strings } from "@/content/strings";
+import { downloadMarkdown } from "@/lib/export/download";
+import { mdFileName } from "@/lib/export/md-path";
 import { type NameCheck, nextUntitled, validateName } from "@/lib/workspace/names";
 import type { Doc, Folder } from "@/lib/workspace/repository";
 
@@ -241,6 +243,12 @@ export function Sidebar(props: Props) {
                   { label: strings.delete, icon: Trash2, run: () => void removeItem(it) },
                 ]
               : [
+                  // 마지막으로 저장한 본문을 <제목>.md로 내려받는다 — 화면 이동·저장 확인 없음 (008 FR-007–FR-010)
+                  {
+                    label: strings.download,
+                    icon: Download,
+                    run: () => downloadMarkdown(mdFileName(it.name), docs.find((d) => d.id === it.id)?.content ?? ""),
+                  },
                   { label: strings.rename, icon: Pencil, run: () => setEditing({ mode: "rename", kind: it.kind, id: it.id }) },
                   { label: strings.delete, icon: Trash2, run: () => void removeItem(it) },
                 ];
@@ -262,9 +270,8 @@ export function Sidebar(props: Props) {
                     activate(it);
                   }}
                   style={{ paddingLeft: indent }}
-                  className={`flex h-[30px] min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-[13px] ${
-                    it.kind === "folder" ? "pr-[84px]" : "pr-[58px]"
-                  } ${focusRing} ${
+                  // pr-[84px]: 오른쪽 줄 버튼 3개 자리 (폴더·문서 모두 3개)
+                  className={`flex h-[30px] min-w-0 flex-1 cursor-pointer items-center gap-1.5 pr-[84px] text-[13px] ${focusRing} ${
                     selected ? "bg-[#e8edfb] font-semibold text-[var(--accent)]" : "text-[var(--fg)] hover:bg-[#f1f3f9]"
                   }`}
                 >

@@ -102,6 +102,10 @@ describe.each(impls)("Repository 계약: %s", (_name, make) => {
     expect(await repo.getMeta("lastDocId")).toBeUndefined();
     await repo.setMeta("lastDocId", "abc");
     expect(await repo.getMeta("lastDocId")).toBe("abc");
+    // 008 FR-002 — 연결 폴더 핸들(구조화 복제 가능한 값) 왕복
+    expect(await repo.getMeta("exportDir")).toBeUndefined();
+    await repo.setMeta("exportDir", { kind: "directory", name: "md" });
+    expect(await repo.getMeta("exportDir")).toEqual({ kind: "directory", name: "md" });
   });
 
   it("seed는 같은 이름 폴더를 재사용하고 legacyImported를 설정한다", async () => {

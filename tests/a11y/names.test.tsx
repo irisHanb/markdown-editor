@@ -191,6 +191,23 @@ describe("사이드바 줄 버튼", () => {
     expect(html).not.toMatch(/\binvisible\b/);
   });
 
+  // 008 FR-007 — 문서 줄 [다운로드]
+  it.each(["‘주간 회의’ 다운로드", "‘월간 회의’ 다운로드", "‘할 일’ 다운로드"])("%s 버튼 + aria-hidden 아이콘 1개", (label) => {
+    const m = button(label);
+    expect(m).not.toBeNull();
+    expect(m![1].match(/<svg[^>]*aria-hidden="true"/g)).toHaveLength(1);
+  });
+
+  it("폴더 줄에는 다운로드 없음", () => {
+    expect(button("‘회의’ 다운로드")).toBeNull();
+  });
+
+  it("문서 줄 버튼 순서: 다운로드 → 이름 바꾸기 → 삭제", () => {
+    const order = ["다운로드", "이름 바꾸기", "삭제"].map((n) => html.indexOf(`aria-label="‘주간 회의’ ${n}"`));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+  });
+
   it("문서 줄에는 새 문서 버튼 없음", () => {
     expect(button("‘주간 회의’ 새 문서")).toBeNull();
   });

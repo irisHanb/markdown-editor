@@ -22,7 +22,12 @@ export type Doc = {
 
 export type DocPatch = { content?: string; title?: string; folderId?: string };
 
-export type Meta = { lastDocId: string | null; legacyImported: true };
+export type Meta = {
+  lastDocId: string | null;
+  legacyImported: true;
+  /** .md 파일을 쓸 연결 폴더 — FileSystemDirectoryHandle(구조화 복제 가능) (specs/008-md-file-export FR-002) */
+  exportDir: unknown;
+};
 
 export interface Repository {
   listFolders(): Promise<Folder[]>;

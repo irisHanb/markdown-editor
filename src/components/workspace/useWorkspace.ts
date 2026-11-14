@@ -6,6 +6,7 @@ import { strings } from "@/content/strings";
 import type { Route } from "@/lib/route/route";
 import { bootstrap } from "@/lib/workspace/bootstrap";
 import { createDraft, type Draft } from "@/lib/workspace/draft";
+import type { DirHandle } from "@/lib/export/fs-export";
 import { createIdbRepository } from "@/lib/workspace/idb-repository";
 import { createMemoryRepository } from "@/lib/workspace/memory-repository";
 import { byName, pickNextDocument } from "@/lib/workspace/names";
@@ -25,7 +26,8 @@ export type { Draft } from "@/lib/workspace/draft";
 export type View = "loading" | "doc" | "new" | "dashboard" | "notFound";
 
 export type SaveOutcome =
-  | { ok: true; createdId?: string; renamedTo?: string }
+  /** saved: 실제로 저장된 폴더·제목(제목은 공백 제거·자동 접미사 반영) — .md 파일 경로에 쓴다 (008 FR-003) */
+  | { ok: true; createdId?: string; renamedTo?: string; saved: { folderId: string; title: string } }
   | { ok: false; reason: Extract<SavePlan, { kind: "error" }>["reason"] | "storage" };
 
 function getStorage(): Storage | null {
@@ -44,6 +46,8 @@ export function useWorkspace() {
   const draftSeq = useRef(0);
   const [ready, setReady] = useState(false);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  // .md 파일을 쓸 연결 폴더 (specs/008-md-file-export FR-002). 없으면 null
+  const [exportDir, setExportDir] = useState<DirHandle | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [view, setView] = useState<View>("loading");
@@ -122,6 +126,7 @@ export function useWorkspace() {
       if (cancelled) return;
       repoRef.current = repo;
       await refresh();
+      setExportDir(((await repo.getMeta("exportDir")) as DirHandle | undefined) ?? null);
       setReady(true);
     })();
     return () => {
@@ -206,7 +211,12 @@ export function useWorkspace() {
           setCurrent(doc);
           setView("doc"); // editorKey는 그대로 — 편집기를 다시 만들지 않는다
           await refresh();
-          return { ok: true, createdId: doc.id, renamedTo: plan.renamed ? plan.title : undefined };
+          return {
+            ok: true,
+            createdId: doc.id,
+            renamedTo: plan.renamed ? plan.title : undefined,
+            saved: { folderId: doc.folderId, title: doc.title },
+          };
         }
         if (!current) return { ok: false, reason: "storage" };
         await repo.updateDocument(current.id, plan.patch);
@@ -214,9 +224,10 @@ export function useWorkspace() {
           const f = folders.find((x) => x.id === plan.patch.folderId);
           if (f?.collapsed) await repo.setCollapsed(f.id, false);
         }
-        setCurrent({ ...current, ...plan.patch, updatedAt: Date.now() });
+        const next = { ...current, ...plan.patch, updatedAt: Date.now() };
+        setCurrent(next);
         await refresh();
-        return { ok: true };
+        return { ok: true, saved: { folderId: next.folderId, title: next.title } };
       } catch {
         return { ok: false, reason: "storage" };
       }
@@ -317,9 +328,25 @@ export function useWorkspace() {
     [ask, current, docs, folders, openDashboard, openDoc, refresh],
   );
 
+  /** [저장 폴더 연결] — 폴더를 고르고 기억한다. 취소하면 그대로 (008 FR-001·FR-002) */
+  const connectExportDir = useCallback(async (): Promise<DirHandle | null> => {
+    const picker = (window as unknown as { showDirectoryPicker?: (o: object) => Promise<DirHandle> }).showDirectoryPicker;
+    if (!picker) return null;
+    try {
+      const dir = await picker({ id: "md-export", mode: "readwrite" });
+      await repoRef.current?.setMeta("exportDir", dir);
+      setExportDir(dir);
+      return dir;
+    } catch {
+      return null; // 사용자가 고르기를 취소함
+    }
+  }, []);
+
   return {
     ready,
     storageUnavailable,
+    exportDir,
+    connectExportDir,
     folders,
     docs,
     view,

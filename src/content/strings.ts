@@ -7,6 +7,13 @@ export const strings = {
   noticeDone: "완료",
   noticeError: "오류",
   noticeOk: "확인",
+  // .md 파일 쓰기 (specs/008-md-file-export)
+  connectExport: "저장 폴더 연결",
+  download: "다운로드",
+  exportFolder: (name: string) => `저장 폴더: ${name}`,
+  exportConnected: (name: string) => `‘${name}’ 폴더를 연결했습니다. 이제 저장할 때마다 이 폴더 아래에 .md 파일을 씁니다`,
+  fileWritten: (path: string) => `파일: ${path}`,
+  fileWriteFailed: "브라우저 저장소에는 저장했지만 .md 파일로 쓰지 못했습니다. 저장 폴더 연결과 쓰기 허락을 확인해 주십시오",
   cancel: "취소",
   save: "저장",
   appName: "Markdown Editor",
