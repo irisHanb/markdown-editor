@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `docs/requirement.md §12`의 마일스톤 7단계 구현을 마쳤다(2026-11-13). Vitest 20 files·354 tests 통과, `tsc --noEmit` 오류 0건, 정적 export 빌드 통과(기록: `TDD-IMPLEMENTS.md`). 남은 작업은 세 가지다 — 마일스톤별 브라우저 수동 검증(각 `specs/00N-*/quickstart.md` 2절, 한 번도 실행하지 않음), Vercel 배포(M1 T052, 사용자 결정 필요), 원격 푸시. 범위에서 뺀 항목: 모바일 화면(NFR-4), `.md` 내보내기(PRD C-5). SDD 산출물은 `specs/001`–`006` 6개다(아래 SDD 매핑).
 
-확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. 문서 데이터는 M3부터 IndexedDB(`idb` 8.0.4, `src/lib/workspace/`)에 저장하고 M1의 `localStorage["mdeditor:v1"]`은 첫 실행 시 옮긴 뒤 지운다(헌장 1.0.2 원칙 V). 레이아웃 설정만 `localStorage`. Zustand·`react-resizable-panels`는 쓰지 않는다.
+확정 스택: **Next.js 16.4.6 (App Router, `output: "export"`) + React 19.3.1 + TypeScript 5.9.3 + Tailwind CSS 4.3.5 + CodeMirror 6 + unified(remark/rehype, `rehype-raw` 포함)**. 버전 고정표는 `specs/001-single-screen-editor/research.md` R3. 문서 데이터는 M3부터 IndexedDB(`idb` 8.0.4, `src/lib/workspace/`)에 저장하고 M1의 `localStorage["mdeditor:v1"]`은 첫 실행 시 옮긴 뒤 지운다(헌장 1.0.2 원칙 V). 레이아웃 설정만 `localStorage`. 008부터 [저장 폴더 연결]로 고른 폴더(handle은 IndexedDB `meta.exportDir`)에 저장 때마다 `.md` 사본을 쓴다 — 원본은 IndexedDB. Zustand·`react-resizable-panels`는 쓰지 않는다.
 
 ### 마일스톤 — `docs/requirement.md §12`가 기준(canonical)
 
@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **문서 주소**: 정적 export는 동적 경로를 만들 수 없어서 `docs/requirement.md` §2·§11의 `/editor/[docId]` 대신 해시 주소(`#/doc/<id>`·`#/new`·`#/dashboard`)를 쓴다(`src/lib/route/route.ts`, `specs/005-document-flow/research.md`).
 
-**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서) · `specs/005-document-flow` → M6(폴더 선택 저장·문서 옮기기, 대시보드, 문서 주소) · `specs/006-polish-a11y` → M7(이탈 경고, 접근성) · `specs/007-usability-fixes` → 수동 검증 피드백(툴바 편집 위치, 강제 줄바꿈 공백 방식, 알림 모달, 로고 → 대시보드). 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
+**SDD 매핑**: `specs/001-single-screen-editor` → M1 · `specs/002-sidebar-layout` → M2-a(레이아웃) · `specs/003-full-toolbar` → M2-b(툴바 18버튼, 제목 H1–H3) · `specs/004-folder-storage` → M3(폴더·문서 저장소, 사이드바 트리, 새 문서) · `specs/005-document-flow` → M6(폴더 선택 저장·문서 옮기기, 대시보드, 문서 주소) · `specs/006-polish-a11y` → M7(이탈 경고, 접근성)`specs/007-usability-fixes` → 수동 검증 피드백(툴바 편집 위치, 강제 줄바꿈 공백 방식, 알림 모달, 로고 → 대시보드) · `specs/008-md-file-export` → 저장 시 연결 폴더(File System Access API, Chrome·Edge)에 `<폴더>/<제목>.md` 쓰기. 전체 비전 `docs/PRD.md`, 기술 설계 `docs/TRD.md`.
 
 
 ## 핵심 아키텍처 원칙 (반드시 준수)
